@@ -12,3 +12,6 @@ wheels/
 
 # Ignore all Markdown files
 *.md
+
+# Allow README.md
+!README.md
