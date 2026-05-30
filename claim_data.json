@@ -1,0 +1,245 @@
+{
+    "claim_id": "CLM-2026-000123",
+    "submitted_date": "2026-05-25",
+    "primary_insured": {
+        "policy_no": "POL-99887766",
+        "tpa_id": "TPA-4521",
+        "policy_holder_name": "Ram Yadav",
+        "address": "Flat 12, Sunrise Apartments, MG Road",
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "pin_code": "560001",
+        "email": "ram.yadav@gmail.com"
+    },
+    "insurance_history": {
+        "other_medical_insurance": "Yes",
+        "commencement_without_break_date": "2020-10-10",
+        "insurance_company_name": "Star Health",
+        "policy_no": "POL-88997766",
+        "sum_insured": "1000000",
+        "hospitalized_in_last_four_years": "Yes"
+    },
+    "patient_details": {
+        "name": "Sita Yadav",
+        "relationship_to_policy_holder": "Spouse",
+        "room_category": "single_occupency",
+        "hospitalsation_reason": "illness",
+        "date_of_admission": "2026-04-20",
+        "time_of_admission": "12:40PM",
+        "date_of_discharge": "2026-04-30",
+        "time_of_discharge": "02:45PM",
+        "system_of_medicine": "allopathy"
+    },
+    "claim_details": {
+        "expenses": {
+            "hospitalization_expenses": {
+                "amount_rs": 50000
+            },
+            "pre_hospitalization_expenses": {
+                "amount_rs": 10200,
+                "period_days": 2
+            },
+            "post_hospitalization_expenses": {
+                "amount_rs": 5000,
+                "period_days": 1
+            },
+            "health_check_up_cost": {
+                "amount_rs": 4040
+            },
+            "ambulance_charges": {
+                "amount_rs": 6700
+            },
+            "others": {
+                "code": "np",
+                "amount_rs": 0
+            },
+            "total_expenses_rs": 71940
+        },
+        "domiciliary_is_applicable": "no",
+        "benefits": {
+            "hospital_daily_cash_rs": 0,
+            "surgical_cash_rs": 0,
+            "critical_illness_benefit_rs": 0,
+            "convalescence_rs": 0,
+            "pre_post_hospitalization_lump_sum_benefit_rs": 0,
+            "others_rs": 0,
+            "total_lump_sum_rs": 0
+        },
+        "claim_documents_submitted_checklist": {
+            "duly_filled_and_signed_claim_form": "yes",
+            "copy_of_intimation_letter_if_any": "yes",
+            "hospital_main_bill": "yes",
+            "hospital_break_up_bill": "yes",
+            "hospital_bill_payment_receipt": "yes",
+            "hospital_discharge_summary": "yes",
+            "doctor_prescription": "yes",
+            "doctor_request_for_investigation": "yes",
+            "investigation_reports_including_ct_mri_usg_hpe": "yes",
+            "operation_theater_notes": "yes",
+            "ecg": "yes",
+            "pharmacy_bill": "yes",
+            "others": "yes"
+        }
+    },
+    "bills_details": [
+        {
+            "bill_no": "BL-2026-8942",
+            "date": "15/05/2026",
+            "issued_by": "Apollo Diagnostics",
+            "towards": "Pre-Hospitalization: Blood tests & CT Scan",
+            "amount_rs": 6500
+        },
+        {
+            "bill_no": "IP-77301-B",
+            "date": "20/05/2026",
+            "issued_by": "Max Super Specialty",
+            "towards": "Hospitalization: Room rent & Surgery",
+            "amount_rs": 145000
+        },
+        {
+            "bill_no": "PH-99214",
+            "date": "22/05/2026",
+            "issued_by": "Wellness Pharmacy",
+            "towards": "Post-Hospitalization: Discharge Medicines",
+            "amount_rs": 3200
+        }
+    ],
+    "hospital_details": {
+        "hospital_name": "Green Valley Hospital",
+        "hospital_id": "HED-MUM-HOS-0421",
+        "hospital_address": "12 Health Park, Sector 5, Bangalore",
+        "hospital_type": "network",
+        "doctor_name": "Jhatka Vaid",
+        "qualification": "MD",
+        "registaration_with_state-code": "MCI/12-45678",
+        "admission_date": "2026-05-20",
+        "discharge_date": "2026-05-24",
+        "diagnosis": "Acute appendicitis",
+        "procedure": "Laparoscopic appendectomy",
+        "treating_doctor": "Dr. S. Mehta"
+    },
+    "admitted_patient_details": {
+        "patient_name": "Sita Yadav",
+        "ip_registration_number": "IPD-88341",
+        "date_of_admission": "2026-04-20",
+        "time_of_admission": "12:40PM",
+        "date_of_discharge": "2026-04-30",
+        "time_of_discharge": "02:45PM",
+        "type_of_admission": "emergency",
+        "status_at_discharge": "discharged_to_home",
+        "total_claimed_amount":"71940"
+    },
+    "diagnosis_and_treatment_details": {
+        "medical_codes": {
+            "icd_10_diagnosis": {
+                "primary": {
+                    "code": "I21.1",
+                    "description": "Acute transmural myocardial infarction of inferior wall"
+                },
+                "additional": {
+                    "code": "I10",
+                    "description": "Essential (primary) hypertension"
+                },
+                "co_morbidities": [
+                    {
+                        "code": "E11.9",
+                        "description": "Type 2 diabetes mellitus"
+                    }
+                ]
+            },
+            "procedure_or_surgery_codes": {
+                "procedures": [
+                    {
+                        "code": "02713ZZ",
+                        "description": "Coronary Artery Dilation with Drug-Eluting Stent"
+                    }
+                ],
+                "detailed_notes": "Emergency Coronary Angiography followed by Primary PTCA to the Right Coronary Artery."
+            }
+        },
+        "pre_authorization": {
+            "is_obtained": false,
+            "approval_number": null,
+            "rejection_or_missing_reason": "Emergency admission requiring immediate life-saving surgery. Pre-auth timeline skipped to prioritize patient care."
+        },
+        "injury_or_accident_details": {
+            "is_injury": false,
+            "cause_type": null,
+            "substance_abuse_or_alcohol": {
+                "is_suspected": false,
+                "test_conducted": false,
+                "test_remarks": null
+            },
+            "legal_and_police_records": {
+                "is_medico_legal_case": false,
+                "is_reported_to_police": false,
+                "fir_number": null,
+                "reason_not_reported": "Not applicable. Patient admitted for a medical illness, not an external injury."
+            }
+        }
+    },
+    "claim_documents_submitted_checklist": {
+        "forms_and_authorizations": {
+            "claim_form_filled_and_signed": true,
+            "original_pre_authorization_request": false,
+            "copy_of_pre_authorization_approval_letter": false,
+            "copy_of_patient_photo_id_verified_by_hospital": true
+        },
+        "hospital_medical_records": {
+            "hospital_discharge_summary": true,
+            "operation_theatre_notes": true,
+            "investigation_reports": true,
+            "ct_mri_usg_hpe_investigation_reports": false,
+            "doctors_reference_slip_for_investigation": true,
+            "ecg": true,
+            "original_death_summary": false
+        },
+        "bills_and_financials": {
+            "hospital_main_bill": true,
+            "hospital_break_up_bill": true,
+            "pharmacy_bills": true
+        },
+        "legal_and_accident_records": {
+            "mlc_report_and_police_fir": false
+        },
+        "other_documents": [
+            {
+                "document_name": "Cancelled Cheque for NEFT Payout",
+                "is_submitted": true
+            },
+            {
+                "document_name": "Aadhaar Card of Primary Insured",
+                "is_submitted": true
+            }
+        ]
+    },
+    "charges": {
+        "hospitalization_charges": 25000.00,
+        "surgeon_fees": 8000.00,
+        "anesthesia_fees": 2000.00,
+        "investigations": 1500.00,
+        "medicines": 1200.00,
+        "consumables": 1000.00,
+        "ambulance_charges": 750.00,
+        "other_charges": 550.00,
+        "total_claim_amount": 43000.00
+    },
+    "bank_details": {
+        "beneficiary_name": "Asha Kumari",
+        "bank_name": "ICICI Bank",
+        "account_no": "987654321098",
+        "ifsc": "ICIC0000456"
+    },
+    "uploaded_files": [
+        "policy_document_policy_99887766.pdf",
+        "hospital_bill_20260521.pdf",
+        "discharge_summary_20260524.pdf",
+        "patient_id_asha_kumari.jpg",
+        "prescription_20260519.pdf"
+    ],
+    "claimant_declaration": {
+        "declaration_text": "I hereby declare that the information provided is true to the best of my knowledge and the attached documents are authentic.",
+        "signature_name": "Rajesh Kumar",
+        "signature_date": "2026-05-25"
+    }
+}
