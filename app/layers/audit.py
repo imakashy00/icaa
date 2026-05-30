@@ -1,0 +1,2 @@
+# Purpose: Final review to ensure compliance, log agent decisions, and prepare the state for permanent archival storage.
+# Suggestion: Have an independent LLM agent compile your workflow_history and extraction_errors into a clean, human-readable summary narrative (e.g., "Claim verified; flagged for minor name mismatch but approved by human adjuster Bob on 12/05"). This is invaluable for legal audits.

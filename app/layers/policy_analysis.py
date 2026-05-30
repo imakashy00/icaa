@@ -1,0 +1,2 @@
+# Purpose: Applies the rules of the policy insurance contract. It validates room rent caps, checks if the waiting period is completed, and runs exclusions to calculate the approved_coverage_amount.
+# Suggestion: Do not let the LLM do raw financial math. Instead, have the LLM extract the applicable rule values (e.g., "Room rent cap is $500/day") and pass those numbers to a Python execution tool or math engine to safely compute the final numbers.

@@ -1,4 +1,5 @@
-from typing import List, Optional, TypedDict
+import operator
+from typing import Annotated, List, Optional, TypedDict
 
 from langgraph.graph import StateGraph, MessagesState, START, END   
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -38,7 +39,7 @@ class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightwei
 
     #Hospitalization Details
     hospital_name:Optional[str]
-    hospotal_type:Optional[str]
+    hospital_type:Optional[str]
     room_category:Optional[str]
     hospitalization_reason:Optional[str]
     diagnosis:Optional[str]
@@ -46,14 +47,14 @@ class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightwei
     discharge_date:Optional[str]
     injury_case:Optional[bool]
     medico_legal_case:Optional[bool]
-    police_repoted:Optional[bool]
+    police_reported:Optional[bool]
 
     # Claim Details
     hospitalization_expenses:Optional[float]
     pre_hospitalization_expenses:Optional[float]
-    post_hositalization_expenses:Optional[float]
+    post_hospitalization_expenses:Optional[float]
     ambulance_charges:Optional[float]
-    total_claim_amount:Optional[str]
+    total_claim_amount:float
 
 
     # Document Validation
@@ -64,6 +65,11 @@ class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightwei
     # Extraction Confidence
     extraction_confidence:float
     extraction_errors:List[str]
+    
+    # Bank Details
+    bank_account_no: Optional[str]
+    ifsc_or_routing_code: Optional[str]
+    pan_or_tax_id: Optional[str] 
 
     # Verification Details
     identity_verified: bool
@@ -72,9 +78,10 @@ class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightwei
     medical_verified: bool
     bank_verified: bool
 
+
     # Fraud Details
     fraud_score: float
-    fraud_flags: List[str]
+    fraud_flags:  Annotated[List[str], operator.add]
     duplicate_claim_detected: bool
     suspicious_patterns: List[str]
 
@@ -91,6 +98,10 @@ class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightwei
     rejection_reason:Optional[str]
     approved_amount:Optional[float]
 
+    # Agents knowledge of the workflow
+    current_agent: str          # Tracks which agent holds the lock (e.g., "FraudAgent")
+    next_step: str              # Controls conditional routing edges
+    workflow_history: List[str]
 
 tools = []
 

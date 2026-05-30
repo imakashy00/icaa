@@ -1,0 +1,2 @@
+# Purpose: Compares the data from the Extraction Layer against the data from the Evidence Layer. It toggles your boolean flags like identity_verified, policy_verified, and hospital_verified.
+# Suggestion: Use an LLM as a "Reasoning Judge" here to handle minor variations. For example, if Extraction found "John S. Smith" but Evidence says "John Simon Smith", the LLM can intelligently flags this as a match rather than throwing a hard string-matching error.

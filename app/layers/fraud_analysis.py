@@ -1,0 +1,2 @@
+# Purpose: Computes the fraud_score, detects duplicate claim entries, and checks for anomalies.
+# Suggestion: Feed this layer past claims data from the Evidence layer. Have the agent look for timing anomalies (e.g., a claim filed for an event 2 hours after a policy was purchased) or provider anomalies (e.g., treatments that don't match the hospital's type)

@@ -1,0 +1,2 @@
+# Purpose: Finalizes the claim state by outputting the final_decision, rejection_reason, and approved_amount.
+# Suggestion: Create an auto-routing threshold. If fraud_score < 10 and extraction_confidence > 0.95, route to "Auto-Approve". If it fails either condition, trigger a LangGraph Interruption to route it to a human adjuster UI.
