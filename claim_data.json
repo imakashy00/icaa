@@ -213,19 +213,8 @@
             }
         ]
     },
-    "charges": {
-        "hospitalization_charges": 25000.00,
-        "surgeon_fees": 8000.00,
-        "anesthesia_fees": 2000.00,
-        "investigations": 1500.00,
-        "medicines": 1200.00,
-        "consumables": 1000.00,
-        "ambulance_charges": 750.00,
-        "other_charges": 550.00,
-        "total_claim_amount": 43000.00
-    },
     "bank_details": {
-        "beneficiary_name": "Asha Kumari",
+        "beneficiary_name": "Sita Yadav",
         "bank_name": "ICICI Bank",
         "account_no": "987654321098",
         "ifsc": "ICIC0000456"
@@ -239,7 +228,7 @@
     ],
     "claimant_declaration": {
         "declaration_text": "I hereby declare that the information provided is true to the best of my knowledge and the attached documents are authentic.",
-        "signature_name": "Rajesh Kumar",
+        "signature_name": "Ram Yadav",
         "signature_date": "2026-05-25"
     }
 }
