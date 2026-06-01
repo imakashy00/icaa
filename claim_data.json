@@ -30,6 +30,37 @@
         "time_of_discharge": "02:45PM",
         "system_of_medicine": "allopathy"
     },
+    "prescriptions": [
+        {
+            "prescription_id": "RX-2026-0001",
+            "date": "2026-05-19",
+            "prescriber_name": "Dr. S. Mehta",
+            "registration_no": "MCI/12-45678",
+            "clinic": "Green Valley Hospital",
+            "medications": [
+                {
+                    "name": "Cefuroxime",
+                    "strength": "500 mg",
+                    "form": "tablet",
+                    "dosage": "1 tablet",
+                    "frequency": "twice a day",
+                    "duration_days": 5,
+                    "instructions": "after food"
+                },
+                {
+                    "name": "Paracetamol",
+                    "strength": "500 mg",
+                    "form": "tablet",
+                    "dosage": "1 tablet",
+                    "frequency": "as needed",
+                    "duration_days": 3,
+                    "instructions": ""
+                }
+            ],
+            "notes": "Complete antibiotic course",
+            "file": "prescription_20260519.pdf"
+        }
+    ],
     "claim_details": {
         "expenses": {
             "hospitalization_expenses": {
@@ -127,7 +158,7 @@
         "time_of_discharge": "02:45PM",
         "type_of_admission": "emergency",
         "status_at_discharge": "discharged_to_home",
-        "total_claimed_amount":"71940"
+        "total_claimed_amount": "71940"
     },
     "diagnosis_and_treatment_details": {
         "medical_codes": {
