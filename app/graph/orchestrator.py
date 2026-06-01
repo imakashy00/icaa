@@ -1,10 +1,9 @@
 import operator
-from typing import Annotated, List, Optional, TypedDict
+from typing import Annotated, Dict, List, Optional, TypedDict
 
-from langgraph.graph import StateGraph, MessagesState, START, END   
+from langgraph.graph import StateGraph, MessagesState, START   
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_openai import ChatOpenAI
-from langchain.tools import tool
 from langchain_core.messages import HumanMessage
 
 
@@ -13,6 +12,11 @@ load_dotenv()
 
 # State (Notebook for the Nodes)
 class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightweight while modifying
+    # Documents
+    claim_form :str
+    other_docs:Optional[List[str]]
+    document_texts: Dict[str,str]
+
     # Raw Inputs
     claim_id:str
     uploaded_files:List[str]
