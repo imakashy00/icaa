@@ -16,6 +16,7 @@ dependencies = [
     "numpy>=2.4.4",
     "openai>=2.36.0",
     "opencv-python>=4.13.0.92",
+    "pillow>=12.2.0",
     "pydantic>=2.13.4",
     "pymupdf4llm>=1.27.2.3",
     "pypdf>=6.12.2",
