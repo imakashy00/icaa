@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from app.graph.orchestrator import ClaimState
-
 
 AGGREGATION_TARGETS = {
     "ClaimForm": "claim_form",
@@ -29,7 +27,7 @@ def _ensure_dict(value: Any) -> Dict[str, Any]:
     return {}
 
 
-async def claim_aggregation_node(state: ClaimState):
+async def claim_aggregation_node(state: Any):
     extracted_documents = state.get("extracted_documents", {})
     claim_form = _ensure_dict(state.get("claim_form", {}))
 

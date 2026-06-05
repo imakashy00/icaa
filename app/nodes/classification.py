@@ -1,15 +1,23 @@
-from app.core.settings import settings
-from app.graph.orchestrator import ClaimState
-from app.tools.document_classification import DocumentClassifierAgent
+from typing import Any
 
 
-classifier = DocumentClassifierAgent(api_key=settings.OPENAI_API_KEY)
+async def document_classifier_node(state: Any):
+    # Lazy-import to avoid requiring OPENAI_API_KEY at module import time
+    from app.core.settings import settings
+    from app.tools.document_classification import DocumentClassifierAgent
 
+    api_key = getattr(settings, "OPENAI_API_KEY", None)
+    if not api_key:
+        # If an API key is not present, skip classification and end the subgraph
+        return {
+            "classified_documents": {},
+            "current_agent": "DocumentClassifier",
+            "next_step": "completed",
+        }
 
-async def document_classifier_node(state: ClaimState):
-
-    results = await classifier.classify_documents(state["document_texts"])
-
+    classifier = DocumentClassifierAgent(api_key=api_key)
+    document_texts = state.get("document_texts", {})
+    results = await classifier.classify_documents(document_texts)
     return {
         "classified_documents": results,
         "current_agent": "DocumentClassifier",

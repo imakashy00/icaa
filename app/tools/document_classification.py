@@ -1,6 +1,7 @@
+from typing import Any, Dict, Literal
+
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, SecretStr
-from typing import Any, Dict, Literal
 
 
 # This is a subagent used to classify categories
@@ -18,7 +19,7 @@ class DocumentCategory(BaseModel):
     ]
     confidence_score: float
     reasoning: str = Field(
-        ..., max_length=20, description="short reason for classification"
+        ..., max_length=1000, description="short reason for classification"
     )
 
 
