@@ -1,2 +1,38 @@
-# Purpose: Final review to ensure compliance, log agent decisions, and prepare the state for permanent archival storage.
-# Suggestion: Have an independent LLM agent compile your workflow_history and extraction_errors into a clean, human-readable summary narrative (e.g., "Claim verified; flagged for minor name mismatch but approved by human adjuster Bob on 12/05"). This is invaluable for legal audits.
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Dict
+
+
+def build_audit_summary(state: Dict[str, Any]) -> Dict[str, Any]:
+	workflow_history = list(state.get("workflow_history", []))
+	final_report = state.get("final_report", {})
+	extraction_errors = state.get("extraction_errors", []) or []
+
+	narrative_parts = []
+	narrative_parts.extend(workflow_history)
+	if extraction_errors:
+		narrative_parts.append(f"Extraction issues: {'; '.join(map(str, extraction_errors))}")
+	if final_report.get("decision"):
+		narrative_parts.append(f"Final decision: {final_report['decision']}")
+	if final_report.get("rejection_reason"):
+		narrative_parts.append(f"Reason: {final_report['rejection_reason']}")
+
+	return {
+		"audit_timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+		"audit_narrative": " | ".join(narrative_parts),
+		"workflow_history": workflow_history,
+	}
+
+
+async def audit_node(state: Dict[str, Any]) -> Dict[str, Any]:
+	audit_summary = build_audit_summary(state)
+	workflow_history = list(state.get("workflow_history", []))
+	workflow_history.append("AuditAgent: archived final workflow summary")
+
+	return {
+		"audit_summary": audit_summary,
+		"workflow_history": workflow_history,
+		"current_agent": "AuditAgent",
+		"next_step": "completed",
+	}

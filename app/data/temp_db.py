@@ -1,4 +1,5 @@
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -54,6 +55,93 @@ class ClaimDatabaseRecord(BaseModel):
     bills_details: list[dict]
     claim_documents_submitted_checklist: dict
     uploaded_files: List[str]
+
+
+class PolicyRecord(BaseModel):
+    policy_no: str
+    tpa_id: Optional[str]
+    policy_holder_name: str
+    active: bool
+    start_date: str
+    end_date: str
+    waiting_period_days: int
+    sum_insured: float
+    room_rent_cap_per_day: float
+    co_pay_percentage: float
+    exclusions: List[str]
+    covered_icd_codes: List[str]
+    covered_conditions: List[str]
+
+
+class HospitalNetworkRecord(BaseModel):
+    hospital_id: str
+    hospital_name: str
+    hospital_type: str
+    city: str
+    in_network: bool
+    specialties: List[str]
+    doctor_registration_numbers: List[str]
+
+
+@dataclass(frozen=True)
+class InMemoryClaimRepository:
+    policies: Dict[str, PolicyRecord]
+    hospitals: Dict[str, HospitalNetworkRecord]
+    claims: Dict[str, ClaimDatabaseRecord]
+
+    def get_policy(self, policy_no: str) -> Optional[PolicyRecord]:
+        return self.policies.get(policy_no)
+
+    def get_claim(self, claim_id: str) -> Optional[ClaimDatabaseRecord]:
+        return self.claims.get(claim_id)
+
+    def get_claimant(self, policy_no: str) -> Optional[PrimaryInsured]:
+        policy = self.get_policy(policy_no)
+        if policy is None:
+            return None
+
+        claim = next(
+            (
+                record
+                for record in self.claims.values()
+                if record.claim_form.primary_insured
+                and record.claim_form.primary_insured.policy_no == policy_no
+            ),
+            None,
+        )
+        if claim is None:
+            return None
+
+        return claim.claim_form.primary_insured
+
+    def get_claim_history(
+        self,
+        policy_no: str,
+        exclude_claim_id: Optional[str] = None,
+    ) -> List[ClaimDatabaseRecord]:
+        return [
+            record
+            for record in self.claims.values()
+            if record.claim_form.primary_insured
+            and record.claim_form.primary_insured.policy_no == policy_no
+            and record.claim_id != exclude_claim_id
+        ]
+
+    def get_hospital(
+        self,
+        hospital_id: Optional[str] = None,
+        hospital_name: Optional[str] = None,
+    ) -> Optional[HospitalNetworkRecord]:
+        if hospital_id and hospital_id in self.hospitals:
+            return self.hospitals[hospital_id]
+
+        if hospital_name:
+            normalized = hospital_name.strip().casefold()
+            for hospital in self.hospitals.values():
+                if hospital.hospital_name.strip().casefold() == normalized:
+                    return hospital
+
+        return None
 
 
 claim_form_db = ClaimForm(
@@ -278,6 +366,71 @@ claim_db = ClaimDatabaseRecord(
         "prescription_20260519.pdf",
     ],
 )
+
+
+policy_db: Dict[str, PolicyRecord] = {
+    "POL-99887766": PolicyRecord(
+        policy_no="POL-99887766",
+        tpa_id="TPA-4521",
+        policy_holder_name="Ram Yadav",
+        active=True,
+        start_date="2020-10-10",
+        end_date="2027-10-09",
+        waiting_period_days=30,
+        sum_insured=1000000,
+        room_rent_cap_per_day=7500,
+        co_pay_percentage=0.0,
+        exclusions=["cosmetic treatment", "self-inflicted injury"],
+        covered_icd_codes=["I21.1", "I10", "E11.9"],
+        covered_conditions=["acute myocardial infarction", "hypertension", "type 2 diabetes mellitus"],
+    )
+}
+
+
+hospital_db: Dict[str, HospitalNetworkRecord] = {
+    "HED-MUM-HOS-0421": HospitalNetworkRecord(
+        hospital_id="HED-MUM-HOS-0421",
+        hospital_name="Green Valley Hospital",
+        hospital_type="network",
+        city="Bangalore",
+        in_network=True,
+        specialties=["cardiology", "general surgery", "emergency care"],
+        doctor_registration_numbers=["MCI/12-45678"],
+    )
+}
+
+
+claim_repository = InMemoryClaimRepository(
+    policies=policy_db,
+    hospitals=hospital_db,
+    claims={claim_db.claim_id: claim_db},
+)
+
+
+def get_policy(policy_no: str) -> Optional[PolicyRecord]:
+    return claim_repository.get_policy(policy_no)
+
+
+def get_claim(claim_id: str) -> Optional[ClaimDatabaseRecord]:
+    return claim_repository.get_claim(claim_id)
+
+
+def get_claimant(policy_no: str) -> Optional[PrimaryInsured]:
+    return claim_repository.get_claimant(policy_no)
+
+
+def get_claim_history(
+    policy_no: str,
+    exclude_claim_id: Optional[str] = None,
+) -> List[ClaimDatabaseRecord]:
+    return claim_repository.get_claim_history(policy_no, exclude_claim_id=exclude_claim_id)
+
+
+def get_hospital(
+    hospital_id: Optional[str] = None,
+    hospital_name: Optional[str] = None,
+) -> Optional[HospitalNetworkRecord]:
+    return claim_repository.get_hospital(hospital_id=hospital_id, hospital_name=hospital_name)
 
 # Backwards-compatible alias for existing imports.
 user_db = claim_db

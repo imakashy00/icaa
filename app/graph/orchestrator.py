@@ -1,37 +1,45 @@
+from __future__ import annotations
+
 import operator
-from typing import Annotated, Dict, List, Optional, TypedDict
-
-from langgraph.graph import StateGraph, MessagesState, START   
-from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
-
+from typing import Annotated, Any, Dict, List, Optional, TypedDict
 
 from dotenv import load_dotenv
+from langgraph.graph import END, START, StateGraph
+
+from app.layers.audit import audit_node
+from app.layers.decision import decision_node
+from app.layers.evidence_aggregation import evidence_node
+from app.layers.fraud_analysis import analyze_fraud
+from app.layers.policy_analysis import policy_analysis_node
+from app.layers.verification import verification_node
+from app.nodes.aggregation import claim_aggregation_node
+from app.nodes.classification import document_classifier_node
+from app.nodes.extraction import extraction_node
+
 load_dotenv()
 
-# State (Notebook for the Nodes)
-class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightweight while modifying
+
+class ClaimState(TypedDict, total=False):
     # Documents
-    claim_form :str
-    other_docs:Optional[List[str]]
-    document_texts: Dict[str,str]
+    claim_form: Dict[str, Any]
+    other_docs: Optional[List[str]]
+    document_texts: Dict[str, str]
+    classified_documents: Dict[str, Dict[str, Any]]
+    extracted_documents: Dict[str, Dict[str, Any]]
 
     # Raw Inputs
-    claim_id:str
-    uploaded_files:List[str]
-    raw_text:str
-    ocr_completed:str
+    claim_id: str
+    uploaded_files: List[str]
+    raw_text: str
+    ocr_completed: str
 
     # Insured Policy Details
-    policy_no:Optional[str]
-    company_tpa_id:Optional[str]
-    insured_name:str
-    insured:str
-    phone:Optional[str]
-    email:Optional[str]
-
-    # Insurance History
+    policy_no: Optional[str]
+    company_tpa_id: Optional[str]
+    insured_name: Optional[str]
+    insured: Optional[str]
+    phone: Optional[str]
+    email: Optional[str]
 
     # Patient Details
     patient_name: Optional[str]
@@ -41,110 +49,167 @@ class ClaimState(TypedDict): # typedict instead of Basemodel to make it lightwei
     patient_age: Optional[int]
     patient_dob: Optional[str]
 
-    #Hospitalization Details
-    hospital_name:Optional[str]
-    hospital_type:Optional[str]
-    room_category:Optional[str]
-    hospitalization_reason:Optional[str]
-    diagnosis:Optional[str]
-    admission_date:Optional[str]
-    discharge_date:Optional[str]
-    injury_case:Optional[bool]
-    medico_legal_case:Optional[bool]
-    police_reported:Optional[bool]
+    # Hospitalization Details
+    hospital_name: Optional[str]
+    hospital_type: Optional[str]
+    room_category: Optional[str]
+    hospitalization_reason: Optional[str]
+    diagnosis: Optional[str]
+    primary_icd_code: Optional[str]
+    admission_date: Optional[str]
+    discharge_date: Optional[str]
+    injury_case: Optional[bool]
+    medico_legal_case: Optional[bool]
+    police_reported: Optional[bool]
 
     # Claim Details
-    hospitalization_expenses:Optional[float]
-    pre_hospitalization_expenses:Optional[float]
-    post_hospitalization_expenses:Optional[float]
-    ambulance_charges:Optional[float]
-    total_claim_amount:float
-
+    hospitalization_expenses: Optional[float]
+    pre_hospitalization_expenses: Optional[float]
+    post_hospitalization_expenses: Optional[float]
+    ambulance_charges: Optional[float]
+    total_claim_amount: float
 
     # Document Validation
-    submitted_docs:List[str]
-    missing_docs:List[str]
-    document_validation_status:Optional[str]
+    submitted_docs: List[str]
+    missing_docs: List[str]
+    document_validation_status: Optional[str]
 
     # Extraction Confidence
-    extraction_confidence:float
-    extraction_errors:List[str]
-    
+    extraction_confidence: float
+    extraction_errors: List[str]
+
     # Bank Details
     bank_account_no: Optional[str]
     ifsc_or_routing_code: Optional[str]
-    pan_or_tax_id: Optional[str] 
+    pan_or_tax_id: Optional[str]
 
-    # Verification Details
+    # Evidence / Verification
+    evidence_bundle: Dict[str, Any]
+    verification_results: Dict[str, Any]
     identity_verified: bool
     policy_verified: bool
     hospital_verified: bool
     medical_verified: bool
     bank_verified: bool
 
-
     # Fraud Details
     fraud_score: float
-    fraud_flags:  Annotated[List[str], operator.add]
+    fraud_flags: Annotated[List[str], operator.add]
+    fraud_deduction_pct: float
     duplicate_claim_detected: bool
     suspicious_patterns: List[str]
 
-    # Policy Eligibility 
-    policy_active:bool
-    coverage_eligible:bool
-    waiting_period_completed:bool
-    exclusions_found:List[str]
-    approved_coverage_amount:Optional[float]
-
+    # Policy Eligibility
+    policy_active: bool
+    coverage_eligible: bool
+    waiting_period_completed: bool
+    exclusions_found: List[str]
+    approved_coverage_amount: Optional[float]
+    policy_analysis: Dict[str, Any]
 
     # Human Review
-    final_decision:Optional[str]
-    rejection_reason:Optional[str]
-    approved_amount:Optional[float]
+    final_decision: Optional[str]
+    rejection_reason: Optional[str]
+    approved_amount: Optional[float]
+    final_report: Dict[str, Any]
+    audit_summary: Dict[str, Any]
 
-    # Agents knowledge of the workflow
-    current_agent: str          # Tracks which agent holds the lock (e.g., "FraudAgent")
-    next_step: str              # Controls conditional routing edges
+    # Workflow Control
+    current_agent: str
+    next_step: str
     workflow_history: List[str]
 
-tools = []
 
-# Brain
-model = ChatOpenAI(
-    model='gpt-4o-mini',
-    temperature=0.2,
-    ).bind_tools(tools)
-
-#Node 
-# Create Graph
-icaa = StateGraph(MessagesState)
-
-def assistant(state:MessagesState):
-    response = model.invoke(state['messages'])
-    return {'messages':[response]}
+def _route_next_step(state: ClaimState) -> str:
+    return state.get("next_step", "completed")
 
 
-# Add Nodes
-icaa.add_node('assistant',assistant)
-icaa.add_node('tools',ToolNode(tools))
+workflow = StateGraph(ClaimState)
 
-# Add Edges
-icaa.add_edge(START,'assistant')
-icaa.add_conditional_edges('assistant',tools_condition)
-icaa.add_edge('tools','assistant')
+workflow.add_node("document_classifier", document_classifier_node)
+workflow.add_node("document_extraction", extraction_node)
+workflow.add_node("claim_aggregation", claim_aggregation_node)
+workflow.add_node("evidence_aggregation", evidence_node)
+workflow.add_node("verification", verification_node)
+workflow.add_node("policy_analysis", policy_analysis_node)
+workflow.add_node("fraud_analysis", analyze_fraud)
+workflow.add_node("decision", decision_node)
+workflow.add_node("audit", audit_node)
 
-app = icaa.compile()
+workflow.add_edge(START, "document_classifier")
+workflow.add_conditional_edges(
+    "document_classifier",
+    _route_next_step,
+    {
+        "document_extraction": "document_extraction",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "document_extraction",
+    _route_next_step,
+    {
+        "claim_aggregation": "claim_aggregation",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "claim_aggregation",
+    _route_next_step,
+    {
+        "evidence_aggregation": "evidence_aggregation",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "evidence_aggregation",
+    _route_next_step,
+    {
+        "verification": "verification",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "verification",
+    _route_next_step,
+    {
+        "policy_analysis": "policy_analysis",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "policy_analysis",
+    _route_next_step,
+    {
+        "fraud_analysis": "fraud_analysis",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "fraud_analysis",
+    _route_next_step,
+    {
+        "decision": "decision",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "decision",
+    _route_next_step,
+    {
+        "audit": "audit",
+        "completed": END,
+    },
+)
+workflow.add_conditional_edges(
+    "audit",
+    _route_next_step,
+    {
+        "completed": END,
+    },
+)
 
-# Test with a multi-step expression that requires calling multiple tools
-inputs: MessagesState = {
-    "messages": [
-        HumanMessage(content="Divide 100 by 5, add 20 to the result, multiply that by 3, and then subtract 15.")
-    ]
-}
-
-for output in app.stream(inputs, stream_mode="values"):
-    last_message = output["messages"][-1]
-    last_message.pretty_print()
+app = workflow.compile()
 
 
 

@@ -3,7 +3,7 @@ from app.graph.orchestrator import ClaimState
 
 
 from app.layers.extraction import ExtractionAgent
-from app.schemas.registry import CATEGORY_TO_SCHEMA
+from app.schemas.registry import CATEGORY_TO_SCHEMA, DOCUMENT_CATEGORY_TO_SCHEMA, normalize_category
 
 extractor = ExtractionAgent()
 
@@ -18,13 +18,13 @@ async def extraction_node(state: ClaimState):
     document_texts = state.get("document_texts", {})
 
     for file_name, classification in classified_documents.items():
-        category = classification.get("category", "Unknown")
+        category = normalize_category(classification.get("category", "Unknown"))
 
         if category == "Unknown":
             extraction_errors.append(f"{file_name}: Unknown document type")
             continue
 
-        schema = CATEGORY_TO_SCHEMA.get(category)
+        schema = DOCUMENT_CATEGORY_TO_SCHEMA.get(category) or CATEGORY_TO_SCHEMA.get(category)
 
         if not schema:
             extraction_errors.append(f"{file_name}: No schema found for {category}")

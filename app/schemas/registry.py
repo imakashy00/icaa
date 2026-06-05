@@ -18,6 +18,23 @@ from app.schemas.claim_form import (
     ClaimForm,
 )
 
+
+DOCUMENT_CATEGORY_TO_SCHEMA = {
+    "Claim Form": ClaimForm,
+    "Insurance Card": PrimaryInsured,
+    "Discharge Summary": HospitalizationDetails,
+    "Final Hospital Bill": ClaimExpenses,
+    "Lab Report": DiagnosisAndTreatment,
+    "Prescription": DiagnosisAndTreatment,
+    "KYC Document": PrimaryInsured,
+    "Bank Document": BankDetails,
+    "Unknown": None,
+}
+
+
+def normalize_category(category: str) -> str:
+    return " ".join(category.strip().split())
+
 CATEGORY_TO_SCHEMA = {
     "PrimaryInsured": PrimaryInsured,
     "InsuranceHistory": InsuranceHistory,
