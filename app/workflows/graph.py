@@ -3,16 +3,16 @@ from __future__ import annotations
 from dotenv import load_dotenv
 from langgraph.graph import END, START, StateGraph
 
-from app.graph.types import ClaimState
-from app.layers.audit import audit_node
-from app.layers.decision import decision_node
-from app.layers.evidence_aggregation import evidence_node
-from app.layers.fraud_analysis import analyze_fraud
-from app.layers.policy_analysis import policy_analysis_node
-from app.layers.verification import verification_node
-from app.nodes.aggregation import claim_aggregation_node
-from app.nodes.classification import document_classifier_node
-from app.nodes.extraction import extraction_node
+from app.workflows.state import ClaimState
+from app.services.claims.audit import audit_node
+from app.services.claims.decision import decision_node
+from app.services.claims.evidence_aggregation import evidence_node
+from app.services.claims.fraud_analysis import analyze_fraud
+from app.services.claims.policy_analysis import policy_analysis_node
+from app.services.claims.verification import verification_node
+from app.tools.aggregation import claim_aggregation_node
+from app.tools.classification import document_classifier_node
+from app.tools.extraction import extraction_node
 
 load_dotenv()
 

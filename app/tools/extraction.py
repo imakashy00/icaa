@@ -1,4 +1,4 @@
-from app.graph.types import ClaimState
+from app.workflows.state import ClaimState
 from app.layers.extraction import ExtractionAgent
 from app.schemas.registry import (
     CATEGORY_TO_SCHEMA,

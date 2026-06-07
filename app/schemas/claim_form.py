@@ -162,3 +162,62 @@ class ClaimForm(BaseModel):
     diagnosis_and_treatment: Optional[DiagnosisAndTreatment] = None
     bank_details: Optional[BankDetails] = None
     declaration: Optional[Declaration] = None
+
+
+class PrescriptionMedication(BaseModel):
+    name: str
+    strength: str
+    form: str
+    dosage: str
+    frequency: str
+    duration_days: int
+    instructions: str
+
+
+class PrescriptionRecord(BaseModel):
+    prescription_id: str
+    date: str
+    prescriber_name: str
+    registration_no: str
+    clinic: str
+    medications: List[PrescriptionMedication]
+    notes: str
+    file: str
+
+
+class ClaimDatabaseRecord(BaseModel):
+    claim_id: str
+    submitted_date: str
+    insurance_claimed: bool
+    claim_status: str
+    claim_form: ClaimForm
+    prescriptions: List[PrescriptionRecord]
+    bills_details: list[dict]
+    claim_documents_submitted_checklist: dict
+    uploaded_files: List[str]
+
+
+class PolicyRecord(BaseModel):
+    policy_no: str
+    tpa_id: Optional[str]
+    policy_holder_name: str
+    active: bool
+    start_date: str
+    end_date: str
+    waiting_period_days: int
+    sum_insured: float
+    room_rent_cap_per_day: float
+    co_pay_percentage: float
+    exclusions: List[str]
+    covered_icd_codes: List[str]
+    covered_conditions: List[str]
+
+
+class HospitalNetworkRecord(BaseModel):
+    hospital_id: str
+    hospital_name: str
+    hospital_type: str
+    city: str
+    in_network: bool
+    specialties: List[str]
+    doctor_registration_numbers: List[str]

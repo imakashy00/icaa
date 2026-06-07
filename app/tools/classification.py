@@ -4,7 +4,7 @@ from typing import Any
 async def document_classifier_node(state: Any):
     # Lazy-import to avoid requiring OPENAI_API_KEY at module import time
     from app.core.settings import settings
-    from app.tools.document_classification import DocumentClassifierAgent
+    from app.services.policy.document_classification import DocumentClassifierAgent
 
     api_key = getattr(settings, "OPENAI_API_KEY", None)
     if not api_key:
