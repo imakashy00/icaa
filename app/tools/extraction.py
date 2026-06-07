@@ -1,5 +1,6 @@
+from app.services.claims.extraction import ExtractionAgent
 from app.workflows.state import ClaimState
-from app.layers.extraction import ExtractionAgent
+
 from app.schemas.registry import (
     CATEGORY_TO_SCHEMA,
     DOCUMENT_CATEGORY_TO_SCHEMA,
