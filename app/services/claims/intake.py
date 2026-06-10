@@ -75,8 +75,8 @@ def run_intake_integrity_check(file_path: str) -> dict:
     """
     Evaluates the file and formats the response for your ClaimState.
     """
-    _, ext = os.path.splitext(file_path).lower()
-    
+    _, ext = os.path.splitext(file_path)
+    ext = ext.lower()
     if ext == ".pdf":
         is_valid = is_valid_pdf(file_path)
     elif ext in [".jpg", ".jpeg", ".png", ".heic"]:

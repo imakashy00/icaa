@@ -202,12 +202,12 @@ class PolicyRecord(BaseModel):
     tpa_id: Optional[str]
     policy_holder_name: str
     active: bool
-    start_date: str
-    end_date: str
-    waiting_period_days: int
+    start_date: Optional[str]
+    end_date: Optional[str]
+    waiting_period_days: Optional[int]
     sum_insured: float
-    room_rent_cap_per_day: float
-    co_pay_percentage: float
+    room_rent_cap_per_day: Optional[float]
+    co_pay_percentage: Optional[float]
     exclusions: List[str]
     covered_icd_codes: List[str]
     covered_conditions: List[str]

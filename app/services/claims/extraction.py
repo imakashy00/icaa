@@ -9,14 +9,19 @@ from langchain.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from openai import BaseModel
 
+from app.workflows.state import ClaimState
+
 T = TypeVar("T", bound=BaseModel)
+
 
 class ExtractionAgent:
     def __init__(self) -> None:
         self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-    async def extract(self, schema: Type[T], documents_text: str):
-        extractor = self.llm.with_structured_output(schema=schema)
+    async def extract(self, schema: Type[ClaimState], documents_text: str):
+        extractor = self.llm.with_structured_output(
+            schema=schema, method="function_calling", strict=False
+        )
         prompt = f"""
         You are a medical insurance document extraction system.
 
@@ -30,11 +35,12 @@ class ExtractionAgent:
         7. Do not summarize.
         8. Return valid structured output.
 
+        CRITICAL: Do NOT wrap the JSON output in an outer key like 'claim_form' or 'document'. 
+        Output your properties at the root level of the JSON object.
+
         DOCUMENT:
 
         {documents_text}
         """
-        result =  await extractor.ainvoke(
-            [HumanMessage(content=prompt)]
-            )
+        result = await extractor.ainvoke([HumanMessage(content=prompt)])
         return result

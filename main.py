@@ -11,9 +11,11 @@ from dotenv import load_dotenv
 from app.services.claims.audit import audit_node
 from app.services.claims.decision import decision_node
 from app.services.claims.evidence_aggregation import evidence_node
+from app.services.claims.extraction import ExtractionAgent
 from app.services.claims.fraud_analysis import analyze_fraud
 from app.services.claims.policy_analysis import policy_analysis_node
 from app.services.claims.verification import verification_node
+from app.workflows.state import ClaimState
 
 
 load_dotenv()
@@ -67,13 +69,15 @@ async def _run_downstream_agents(initial_state: Dict[str, Any]) -> Dict[str, Any
     return state
 
 
-def main() -> None:
+async def main() -> None:
 
     claim_data = _read_claim_data(Path("claim_data.json"))
     # print(claim_data)
-    result = asyncio.run(_run_downstream_agents(claim_data))
-    print(result)
+    # result = asyncio.run(_run_downstream_agents(claim_data))
+    # print(result)
+    data = await ExtractionAgent().extract(ClaimState,str(claim_data))
+    print(data)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

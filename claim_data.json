@@ -149,17 +149,6 @@
         "procedure": "Laparoscopic appendectomy",
         "treating_doctor": "Dr. S. Mehta"
     },
-    "admitted_patient_details": {
-        "patient_name": "Sita Yadav",
-        "ip_registration_number": "IPD-88341",
-        "date_of_admission": "2026-04-20",
-        "time_of_admission": "12:40PM",
-        "date_of_discharge": "2026-04-30",
-        "time_of_discharge": "02:45PM",
-        "type_of_admission": "emergency",
-        "status_at_discharge": "discharged_to_home",
-        "total_claimed_amount": "71940"
-    },
     "diagnosis_and_treatment_details": {
         "medical_codes": {
             "icd_10_diagnosis": {

@@ -28,6 +28,17 @@ DOCUMENT_CATEGORY_TO_SCHEMA = {
     "Prescription": DiagnosisAndTreatment,
     "KYC Document": PrimaryInsured,
     "Bank Document": BankDetails,
+    "Insurance History": InsuranceHistory,
+    "Patient Details": PatientDetails,
+    "Hospital Details": HospitalDetails,
+    "Diagnosis Report": Diagnosis,
+    "Comorbidity Record": Comorbidity,
+    "Procedure Code Log": ProcedureCode,
+    "Pre Authorization Letter": PreAuthorization,
+    "Injury Details": InjuryDetails,
+    "Benefit Details": BenefitDetails,
+    "Document Checklist": DocumentChecklist,
+    "Declaration Form": Declaration,
     "Unknown": None,
 }
 
