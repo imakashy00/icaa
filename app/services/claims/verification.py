@@ -103,58 +103,6 @@ def verify_bank_details(
     }
 
 
-async def verification_node(state: Any) -> Dict[str, Any]:
-    evidence_bundle = state.get("evidence_bundle", {})
-    claim_form = state.get("claim_form") or {}
-    primary_insured = (
-        claim_form.get("primary_insured") if isinstance(claim_form, dict) else None
-    )
-    hospital_details = (
-        claim_form.get("hospital_details") if isinstance(claim_form, dict) else None
-    )
-
-    claimant_name = state.get("insured_name") or state.get("patient_name")
-    evidence_name = evidence_bundle.get("policy_holder_name") or evidence_bundle.get(
-        "claimant", {}
-    ).get("policy_holder_name")
-
-    identity_result = compare_identity(claimant_name, evidence_name)
-    policy_result = verify_policy(evidence_bundle.get("policy"), state.get("policy_no"))
-    hospital_result = verify_hospital(
-        state.get("hospital_name") or (hospital_details or {}).get("hospital_name"),
-        evidence_bundle.get("hospital"),
-    )
-    medical_result = verify_medical_data(state)
-    bank_result = verify_bank_details(
-        state.get("bank_account_no"), state.get("ifsc_or_routing_code")
-    )
-
-    workflow_history = list(state.get("workflow_history", []))
-    workflow_history.append(
-        "VerificationAgent: compared extracted claim data with policy, hospital, medical, and bank evidence"
-    )
-
-    verification_updates = {
-        "identity_verified": identity_result["match"],
-        "policy_verified": policy_result["match"],
-        "hospital_verified": hospital_result["match"],
-        "medical_verified": medical_result["match"],
-        "bank_verified": bank_result["match"],
-        "verification_results": {
-            "identity": identity_result,
-            "policy": policy_result,
-            "hospital": hospital_result,
-            "medical": medical_result,
-            "bank": bank_result,
-        },
-        "workflow_history": workflow_history,
-        "current_agent": "VerificationAgent",
-        "next_step": "policy_analysis",
-    }
-
-    if primary_insured is not None:
-        verification_updates["claimant_name_similarity"] = identity_result.get(
-            "similarity_score", 0.0
-        )
-
-    return verification_updates
+async def verification_node(state: Any) :
+    print("Verifying data...")
+    

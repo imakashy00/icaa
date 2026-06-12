@@ -7,12 +7,11 @@ from app.workflows.graph import app
 from app.workflows.state import ClaimState
 
 async def main() -> None:
-    # initial_state = ClaimState()
+    initial_state = ClaimState()
     # 1. Define a config dictionary (LangGraph needs this to track the thread/run)
     # config: RunnableConfig = {"configurable": {"thread_id": "1"}}
-    print("hello")
     # 2. Invoke the graph with the config
-    final_output = await app.ainvoke(None) # needs to provide initial state to the graph
+    final_output = await app.ainvoke(initial_state) # needs to provide initial state to the graph
     print("--- Final Output ---")
     print(final_output)
 

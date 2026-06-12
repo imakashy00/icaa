@@ -40,8 +40,9 @@ async def data_extraction_node(state: ClaimState) -> ClaimState:
 
     {state.document_text}
     """
-    result = await extractor.ainvoke([HumanMessage(content=prompt)])
-    return cast(ClaimState, result)
+    result = cast(ClaimState,await extractor.ainvoke([HumanMessage(content=prompt)]))
+    result.next_step = "verification"
+    return result
 
 
 

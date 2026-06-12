@@ -15,3 +15,4 @@ wheels/
 
 # Allow README.md
 !README.md
+data_seed.py

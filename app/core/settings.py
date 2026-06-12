@@ -7,7 +7,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     OPENAI_API_KEY: str
-
+    DATABASE_URL: str
     # Automatically look for a local .env file
     model_config = SettingsConfigDict(env_file=".env")
 
