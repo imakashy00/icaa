@@ -3,7 +3,8 @@ from typing import Annotated, Any, Dict, List, Optional
 import operator
 
 from pydantic import BaseModel
-# from app.schemas.claim_form import BankDetails, BenefitDetails, ClaimExpenses, DocumentChecklist, HospitalDetails, InsuranceHistory, PatientDetails, PolicyRecord, PrescriptionRecord, PrimaryInsured
+from app.schemas.claim_form import HospitalizationDetails, VerificationCheck
+# from app.schemas.claim_form import BankDetails, BenefitDetails, ClaimExpenses, DocumentChecklist, HospitalDetails, HospitalizationDetails, VerificationCheck, InsuranceHistory, PatientDetails, PolicyRecord, PrescriptionRecord, PrimaryInsured, VerificationResult
 
 
 # class ClaimState(BaseModel):
@@ -15,11 +16,13 @@ from pydantic import BaseModel
 #     patient_details:PatientDetails
 #     prescriptions: List[PrescriptionRecord]
 #     hospital_details:HospitalDetails
+#     hospitalization_details:HospitalizationDetails
 #     bank_details: BankDetails
 #     claim_details:ClaimExpenses
 #     benefit_details:BenefitDetails
 #     docs_checklist:DocumentChecklist
 #     policy_record:PolicyRecord
+#     verification: VerificationResult
 
 #     # Fraud Details
 #     fraud_score: float
@@ -181,6 +184,14 @@ class PolicyRecord(BaseModel):
     covered_conditions: List[str] = Field(default_factory=list)
 
 
+class VerificationResult(BaseModel):
+    user: VerificationCheck = Field(default_factory=VerificationCheck)
+    policy: VerificationCheck = Field(default_factory=VerificationCheck)
+    patient: VerificationCheck = Field(default_factory=VerificationCheck)
+    documents: VerificationCheck = Field(default_factory=VerificationCheck)
+    overall_verified: bool = False
+
+
 class ClaimState(BaseModel):
     document_text:str  = Field(default="")
     primary_insured: PrimaryInsured = Field(default_factory=PrimaryInsured)
@@ -188,11 +199,13 @@ class ClaimState(BaseModel):
     patient_details: PatientDetails = Field(default_factory=PatientDetails)
     prescriptions: List[PrescriptionRecord] = Field(default_factory=list)    
     hospital_details: HospitalDetails = Field(default_factory=HospitalDetails)
+    hospitalization_details: HospitalizationDetails = Field(default_factory=HospitalizationDetails)
     bank_details: BankDetails = Field(default_factory=BankDetails)
     claim_details: ClaimExpenses = Field(default_factory=ClaimExpenses)
     benefit_details: BenefitDetails = Field(default_factory=BenefitDetails)
     docs_checklist: DocumentChecklist = Field(default_factory=DocumentChecklist)
     policy_record: PolicyRecord = Field(default_factory=PolicyRecord)
+    verification: VerificationResult = Field(default_factory=VerificationResult)
     fraud_score: float = 0.0
     fraud_flags: List[str] = Field(default_factory=list)
     final_decision: Optional[str] = None

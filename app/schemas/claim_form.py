@@ -222,3 +222,17 @@ class HospitalNetworkRecord(BaseModel):
     in_network: bool
     specialties: List[str]
     doctor_registration_numbers: List[str]
+
+
+class VerificationCheck(BaseModel):
+    passed: bool = False
+    reason: Optional[str] = None
+
+
+class VerificationResult(BaseModel):
+    user: VerificationCheck 
+    policy: VerificationCheck
+    patient: VerificationCheck
+    documents:VerificationCheck
+    overall_verified: bool = False
+
