@@ -15,7 +15,7 @@ from app.workflows.state import ClaimState
 
 async def data_extraction_node(state: ClaimState) -> ClaimState:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    print("extracting data")
+    print("extracting data...")
     # Bind the structured output schema
     extractor = llm.with_structured_output(
         schema=ClaimState, method="function_calling", strict=False

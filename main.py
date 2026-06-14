@@ -1,17 +1,18 @@
 import asyncio
 
-from langchain_core.runnables import RunnableConfig
-import json
-
 from app.workflows.graph import app
 from app.workflows.state import ClaimState
 
+from app.workflows.initial_data import INITIAL_STATE
+
 async def main() -> None:
-    initial_state = ClaimState()
+
     # 1. Define a config dictionary (LangGraph needs this to track the thread/run)
     # config: RunnableConfig = {"configurable": {"thread_id": "1"}}
     # 2. Invoke the graph with the config
-    final_output = await app.ainvoke(initial_state) # needs to provide initial state to the graph
+    final_output = await app.ainvoke(
+        ClaimState.model_validate(INITIAL_STATE)
+    )  # needs to provide initial state to the graph
     print("--- Final Output ---")
     print(final_output)
 

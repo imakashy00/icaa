@@ -1,37 +1,148 @@
 from __future__ import annotations
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from datetime import date
+
 
 from app.core.db import SessionLocal
-from app.workflows.state import (
-    ClaimState,
-    InsuranceHistory,
-    PatientDetails,
-    PrimaryInsured,
-)
+from app.workflows.state import ClaimState
 
 
-def verify_user(user: PrimaryInsured, db: Session):
-    pass
+from app.models.claim import Policy, PolicyBeneficiary
 
 
-def verify_insurance(insurance: InsuranceHistory, db: Session):
-    pass
+def verify_user(
+    state: ClaimState,
+    db: Session,
+):
+    policy = db.scalar(
+        select(Policy).where(Policy.policy_no == state.primary_insured.policy_no)
+    )
+
+    if not policy:
+        state.verification.user.passed = False
+        state.verification.user.reason = "Policy number not found"
+        return
+
+    if (
+        policy.policy_holder_name.lower().strip()
+        != state.primary_insured.policy_holder_name.lower().strip()
+    ):
+        state.verification.user.passed = False
+        state.verification.user.reason = "Policy holder name mismatch"
+        return
+
+    state.verification.user.passed = True
 
 
-def verify_patient_details(patient_details: PatientDetails, db: Session):
-    pass
+
+def verify_insurance(
+    state: ClaimState,
+    db: Session,
+):
+    policy = db.scalar(
+        select(Policy).where(Policy.policy_no == state.primary_insured.policy_no)
+    )
+
+    if not policy:
+        state.verification.policy.passed = False
+        state.verification.policy.reason = "Policy not found"
+        return
+
+    today = date.today()
+
+    if not policy.active:
+        state.verification.policy.passed = False
+        state.verification.policy.reason = "Policy inactive"
+        return
+
+    if policy.start_date > today:
+        state.verification.policy.passed = False
+        state.verification.policy.reason = "Policy not started"
+        return
+
+    if policy.end_date < today:
+        state.verification.policy.passed = False
+        state.verification.policy.reason = "Policy expired"
+        return
+
+    if policy.available_sum_insured <= 0:
+        state.verification.policy.passed = False
+        state.verification.policy.reason = "No remaining coverage"
+        return
+
+    state.verification.policy.passed = True
+
+
+def verify_patient_details(
+    state: ClaimState,
+    db: Session,
+):
+    policy = db.scalar(
+        select(Policy).where(Policy.policy_no == state.primary_insured.policy_no)
+    )
+
+    if not policy:
+        state.verification.patient.passed = False
+        state.verification.patient.reason = "Policy not found"
+        return
+
+    beneficiary = db.scalar(
+        select(PolicyBeneficiary).where(
+            PolicyBeneficiary.policy_id == policy.id,
+            PolicyBeneficiary.name == state.patient_details.patient_name,
+        )
+    )
+
+    if not beneficiary:
+        state.verification.patient.passed = False
+        state.verification.patient.reason = "Patient not covered under policy"
+        return
+
+    relation = beneficiary.beneficiary_relationship.lower()
+
+    claim_relation = state.patient_details.relationship_to_policy_holder.lower()
+
+    if relation != claim_relation:
+        state.verification.patient.passed = False
+        state.verification.patient.reason = "Relationship mismatch"
+        return
+
+    state.verification.patient.passed = True
+
+
+def compute_verification_status(
+    state: ClaimState,
+):
+    checks = [
+        state.verification.user.passed,
+        state.verification.policy.passed,
+        state.verification.patient.passed,
+        state.verification.documents.passed,
+    ]
+
+    state.verification.overall_verified = all(checks)
+
 
 
 async def verification_node(state: ClaimState):
     print("Verifying data...")
-    # verify user
+
     with SessionLocal() as db:
-        verify_user(state.primary_insured, db=db)
-        # verify policy(coverage , start date , end date , amount used )
-        verify_insurance(state.insurance_history, db=db)
-        # verify users relation to patient
-        verify_patient_details(state.patient_details, db=db)
+        verify_user(state, db)
+        verify_insurance(state, db)
+        verify_patient_details(state, db)
+
+    compute_verification_status(state)
+
     if not state.verification.overall_verified:
-        return {"next_step": "completed"}
-    return {"next_step": "policy_analysis"}
+        return {
+            "verification": state.verification,
+            "next_step": "completed",
+        }
+
+    return {
+        "verification": state.verification,
+        "next_step": "policy_analysis",
+    }

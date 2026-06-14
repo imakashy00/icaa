@@ -1,168 +1,150 @@
 from __future__ import annotations
+import enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
+class Relationship(str, enum.Enum):
+    SELF = "self"
+    SPOUSE = "spouse"
+    CHILD = "child"
+    PARENT = "parent"
 
 class PrimaryInsured(BaseModel):
-    policy_no: Optional[str] = None
-    tpa_id: Optional[str] = None
-    policy_holder_name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    pin_code: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
+    policy_no: Optional[str] 
+    tpa_id: Optional[str] 
+    policy_holder_name: str 
+    address: Optional[str] 
+    city: Optional[str] 
+    state: Optional[str] 
+    pin_code: Optional[str] 
+    phone: Optional[str] 
+    email: Optional[str] 
 
 
 class InsuranceHistory(BaseModel):
-    other_medical_insurance: Optional[bool] = None
-    commencement_without_break_date: Optional[str] = None
-    insurance_company_name: Optional[str] = None
-    previous_policy_no: Optional[str] = None
-    sum_insured: Optional[float] = None
-    hospitalized_in_last_four_years: Optional[bool] = None
+    other_medical_insurance: Optional[bool] 
+    commencement_without_break_date: Optional[str] 
+    insurance_company_name: Optional[str] 
+    previous_policy_no: Optional[str] 
+    sum_insured: Optional[float] 
+    hospitalized_in_last_four_years: Optional[bool] 
 
 
 class PatientDetails(BaseModel):
-    patient_name: Optional[str] = None
-    relationship_to_policy_holder: Optional[str] = None
-    gender: Optional[str] = None
-    age: Optional[int] = None
-    date_of_birth: Optional[str] = None
-    occupation: Optional[str] = None
-    room_category: Optional[str] = None
-    hospitalization_reason: Optional[str] = None
-    system_of_medicine: Optional[str] = None
+    patient_name: Optional[str] 
+    relationship_to_policy_holder: Relationship
+    gender: Optional[str] 
+    age: Optional[int] 
+    date_of_birth: Optional[str] 
+    occupation: Optional[str] 
+    room_category: Optional[str] 
+    hospitalization_reason: Optional[str] 
+    system_of_medicine: Optional[str] 
 
 
 class HospitalizationDetails(BaseModel):
-    date_of_admission: Optional[str] = None
-    time_of_admission: Optional[str] = None
-    date_of_discharge: Optional[str] = None
-    time_of_discharge: Optional[str] = None
-    type_of_admission: Optional[str] = None
-    status_at_discharge: Optional[str] = None
+    date_of_admission: Optional[str] 
+    time_of_admission: Optional[str] 
+    date_of_discharge: Optional[str] 
+    time_of_discharge: Optional[str] 
+    type_of_admission: Optional[str] 
+    status_at_discharge: Optional[str] 
 
 
 class ClaimExpenses(BaseModel):
-    hospitalization_expenses: Optional[float] = None
-    pre_hospitalization_expenses: Optional[float] = None
-    pre_hospitalization_period_days: Optional[int] = None
-    post_hospitalization_expenses: Optional[float] = None
-    post_hospitalization_period_days: Optional[int] = None
-    health_checkup_cost: Optional[float] = None
-    ambulance_charges: Optional[float] = None
-    other_expenses: Optional[float] = None
-    total_expenses: Optional[float] = None
+    hospitalization_expenses: Optional[float] 
+    pre_hospitalization_expenses: Optional[float] 
+    pre_hospitalization_period_days: Optional[int] 
+    post_hospitalization_expenses: Optional[float] 
+    post_hospitalization_period_days: Optional[int] 
+    health_checkup_cost: Optional[float] 
+    ambulance_charges: Optional[float] 
+    other_expenses: Optional[float] 
+    total_expenses: Optional[float] 
 
 
 class BenefitDetails(BaseModel):
-    hospital_daily_cash: Optional[float] = None
-    surgical_cash: Optional[float] = None
-    critical_illness_benefit: Optional[float] = None
-    convalescence_benefit: Optional[float] = None
-    pre_post_lump_sum_benefit: Optional[float] = None
-    other_benefits: Optional[float] = None
-    total_lump_sum_benefit: Optional[float] = None
+    hospital_daily_cash: Optional[float] 
+    surgical_cash: Optional[float] 
+    critical_illness_benefit: Optional[float] 
+    convalescence_benefit: Optional[float] 
+    pre_post_lump_sum_benefit: Optional[float] 
+    other_benefits: Optional[float] 
+    total_lump_sum_benefit: Optional[float] 
 
 
 class DocumentChecklist(BaseModel):
-    claim_form_submitted: Optional[bool] = None
-    intimation_letter_submitted: Optional[bool] = None
-    hospital_main_bill_submitted: Optional[bool] = None
-    hospital_breakup_bill_submitted: Optional[bool] = None
-    payment_receipt_submitted: Optional[bool] = None
-    discharge_summary_submitted: Optional[bool] = None
-    doctor_prescription_submitted: Optional[bool] = None
-    investigation_request_submitted: Optional[bool] = None
-    investigation_reports_submitted: Optional[bool] = None
-    operation_theatre_notes_submitted: Optional[bool] = None
-    ecg_submitted: Optional[bool] = None
-    pharmacy_bill_submitted: Optional[bool] = None
-    other_documents_submitted: Optional[bool] = None
+    claim_form_submitted: Optional[bool] 
+    intimation_letter_submitted: Optional[bool] 
+    hospital_main_bill_submitted: Optional[bool] 
+    hospital_breakup_bill_submitted: Optional[bool] 
+    payment_receipt_submitted: Optional[bool] 
+    discharge_summary_submitted: Optional[bool] 
+    doctor_prescription_submitted: Optional[bool] 
+    investigation_request_submitted: Optional[bool] 
+    investigation_reports_submitted: Optional[bool] 
+    operation_theatre_notes_submitted: Optional[bool] 
+    ecg_submitted: Optional[bool] 
+    pharmacy_bill_submitted: Optional[bool] 
+    other_documents_submitted: Optional[bool] 
 
 
 class HospitalDetails(BaseModel):
-    hospital_name: Optional[str] = None
-    hospital_id: Optional[str] = None
-    hospital_address: Optional[str] = None
-    hospital_type: Optional[str] = None
-    doctor_name: Optional[str] = None
-    doctor_qualification: Optional[str] = None
-    doctor_registration_no: Optional[str] = None
-    diagnosis: Optional[str] = None
-    procedure: Optional[str] = None
-    treating_doctor: Optional[str] = None
+    hospital_name: Optional[str] 
+    hospital_id: Optional[str] 
+    hospital_address: Optional[str] 
+    hospital_type: Optional[str] 
+    doctor_name: Optional[str] 
+    doctor_qualification: Optional[str] 
+    doctor_registration_no: Optional[str] 
+    diagnosis: Optional[str] 
+    procedure: Optional[str] 
+    treating_doctor: Optional[str] 
 
 
 class Diagnosis(BaseModel):
-    primary_icd_code: Optional[str] = None
-    primary_icd_description: Optional[str] = None
-    secondary_icd_code: Optional[str] = None
-    secondary_icd_description: Optional[str] = None
+    primary_icd_code: Optional[str] 
+    primary_icd_description: Optional[str] 
+    secondary_icd_code: Optional[str] 
+    secondary_icd_description: Optional[str] 
 
 
 class Comorbidity(BaseModel):
-    code: Optional[str] = None
-    description: Optional[str] = None
+    code: Optional[str] 
+    description: Optional[str] 
 
 
 class ProcedureCode(BaseModel):
-    code: Optional[str] = None
-    description: Optional[str] = None
+    code: Optional[str] 
+    description: Optional[str] 
 
 
 class PreAuthorization(BaseModel):
-    is_obtained: Optional[bool] = None
-    approval_number: Optional[str] = None
-    rejection_or_missing_reason: Optional[str] = None
+    is_obtained: Optional[bool] 
+    approval_number: Optional[str] 
+    rejection_or_missing_reason: Optional[str] 
 
 
 class InjuryDetails(BaseModel):
-    is_injury: Optional[bool] = None
-    cause_type: Optional[str] = None
-    alcohol_or_substance_abuse_suspected: Optional[bool] = None
-    medico_legal_case: Optional[bool] = None
-    police_reported: Optional[bool] = None
-    fir_number: Optional[str] = None
-
-
-class DiagnosisAndTreatment(BaseModel):
-    diagnosis: Diagnosis = Field(default_factory=Diagnosis)
-    comorbidities: List[Comorbidity] = Field(default_factory=list)
-    procedures: List[ProcedureCode] = Field(default_factory=list)
-    procedure_notes: Optional[str] = None
-    pre_authorization: Optional[PreAuthorization] = None
-    injury_details: Optional[InjuryDetails] = None
+    is_injury: Optional[bool] 
+    cause_type: Optional[str] 
+    alcohol_or_substance_abuse_suspected: Optional[bool] 
+    medico_legal_case: Optional[bool] 
+    police_reported: Optional[bool] 
+    fir_number: Optional[str] 
 
 
 class BankDetails(BaseModel):
-    beneficiary_name: Optional[str] = None
-    bank_name: Optional[str] = None
-    account_no: Optional[str] = None
-    ifsc: Optional[str] = None
+    beneficiary_name: Optional[str] 
+    bank_name: Optional[str] 
+    account_no: Optional[str] 
+    ifsc: Optional[str] 
 
 
 class Declaration(BaseModel):
-    declaration_text: Optional[str] = None
-    signature_name: Optional[str] = None
-    signature_date: Optional[str] = None
-
-
-class ClaimForm(BaseModel):
-    primary_insured: Optional[PrimaryInsured] = None
-    insurance_history: Optional[InsuranceHistory] = None
-    patient_details: Optional[PatientDetails] = None
-    hospitalization_details: Optional[HospitalizationDetails] = None
-    claim_expenses: Optional[ClaimExpenses] = None
-    benefits: Optional[BenefitDetails] = None
-    document_checklist: Optional[DocumentChecklist] = None
-    hospital_details: Optional[HospitalDetails] = None
-    diagnosis_and_treatment: Optional[DiagnosisAndTreatment] = None
-    bank_details: Optional[BankDetails] = None
-    declaration: Optional[Declaration] = None
+    declaration_text: Optional[str] 
+    signature_name: Optional[str] 
+    signature_date: Optional[str] 
 
 
 class PrescriptionMedication(BaseModel):
@@ -184,18 +166,6 @@ class PrescriptionRecord(BaseModel):
     medications: List[PrescriptionMedication]
     notes: str
     file: str
-
-
-class ClaimDatabaseRecord(BaseModel):
-    claim_id: str
-    submitted_date: str
-    insurance_claimed: bool
-    claim_status: str
-    claim_form: ClaimForm
-    prescriptions: List[PrescriptionRecord]
-    bills_details: list[dict]
-    claim_documents_submitted_checklist: dict
-    uploaded_files: List[str]
 
 
 class PolicyRecord(BaseModel):
@@ -225,8 +195,8 @@ class HospitalNetworkRecord(BaseModel):
 
 
 class VerificationCheck(BaseModel):
-    passed: bool = False
-    reason: Optional[str] = None
+    passed: bool 
+    reason: Optional[str] 
 
 
 class VerificationResult(BaseModel):
@@ -234,5 +204,5 @@ class VerificationResult(BaseModel):
     policy: VerificationCheck
     patient: VerificationCheck
     documents:VerificationCheck
-    overall_verified: bool = False
+    overall_verified: bool 
 

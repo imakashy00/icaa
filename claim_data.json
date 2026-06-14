@@ -21,7 +21,7 @@
     },
     "patient_details": {
         "name": "Sita Yadav",
-        "relationship_to_policy_holder": "Spouse",
+        "relationship_to_policy_holder": "spouse",
         "room_category": "single_occupency",
         "hospitalsation_reason": "illness",
         "date_of_admission": "2026-04-20",

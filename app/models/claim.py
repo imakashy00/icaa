@@ -80,6 +80,11 @@ class Policy(Base):
     policy_no: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     tpa_id: Mapped[str] = mapped_column(String(50))
     policy_holder_name: Mapped[str] = mapped_column(String(255))
+    address = mapped_column(Text)
+    city = mapped_column(String(100))
+    state = mapped_column(String(100))
+    pin_code = mapped_column(String(20))
+    email = mapped_column(String(255))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     start_date: Mapped[date] = mapped_column(Date)
     end_date: Mapped[date] = mapped_column(Date)
@@ -147,8 +152,8 @@ class Claim(Base):
     __tablename__ = "claims"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    beneficiary_id = mapped_column(ForeignKey("policy_beneficiaries.id"))
     policy_id: Mapped[UUID] = mapped_column(ForeignKey("policies.id"), index=True)
-    patient_name: Mapped[str] = mapped_column(String(255), index=True)
     status: Mapped[ClaimStatus] = mapped_column(
         Enum(ClaimStatus), default=ClaimStatus.INITIATED
     )
@@ -172,11 +177,21 @@ class Claim(Base):
     )
 
 
+class Hospital(Base):
+    __tablename__ = "hospitals"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    hospital_code: Mapped[str] = mapped_column(String(50), unique=True)
+    hospital_name: Mapped[str] = mapped_column(String(255))
+    hospital_type: Mapped[HospitalType] = mapped_column(Enum(HospitalType))
+    address: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean)
+
+
 class ClaimMedicalDetail(Base):
     __tablename__ = "claim_medical_details"
 
     claim_id: Mapped[UUID] = mapped_column(ForeignKey("claims.id"), primary_key=True)
-    hospital_id: Mapped[str] = mapped_column(String(50), index=True)
     hospital_name: Mapped[str] = mapped_column(String(255))
     hospital_type: Mapped[HospitalType] = mapped_column(Enum(HospitalType))
     admission_date: Mapped[date] = mapped_column(Date)
@@ -188,7 +203,7 @@ class ClaimMedicalDetail(Base):
     # Relationships
     claim: Mapped["Claim"] = relationship(back_populates="medical_details")
     icd_reference: Mapped["ICDMaster"] = relationship(back_populates="medical_details")
-
+    hospital_id = ForeignKey("hospitals.id")
 
 class ClaimFinancial(Base):
     __tablename__ = "claim_financials"
