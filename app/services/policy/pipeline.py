@@ -22,7 +22,7 @@ def ingest_policy_document(
     policy_name: str,
     policy_code: str,
     version: str = "v1",
-) -> int:
+) :
     """
     Full ingestion pipeline for one policy PDF:
 

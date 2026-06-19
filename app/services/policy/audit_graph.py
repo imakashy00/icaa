@@ -22,11 +22,12 @@ targeted LLM call -- never the full 40-page document.
 """
 
 from typing import Optional, TypedDict
+from uuid import UUID
 
 from langgraph.graph import END, StateGraph
 
-from database import get_session
-from llm_client import call_claude_json
+from app.core.db import get_db
+from app.services.policy.llm_client import call_openai_json
 from retrieval import get_structured_fields, retrieve_relevant_clauses
 
 
@@ -48,7 +49,7 @@ class AuditState(TypedDict):
     """
 
     claim: dict
-    policy_id: int
+    policy_id: UUID
     structured_fields: Optional[dict]
     retrieved_clauses: Optional[list]
     deterministic_findings: Optional[list]
@@ -67,7 +68,7 @@ def load_policy_context(state: AuditState) -> AuditState:
     Pure DB read, no LLM call. Raises if the policy hasn't been ingested --
     an audit must never silently run against missing policy data.
     """
-    with get_session() as session:
+    with get_db() as session:
         structured = get_structured_fields(session, state["policy_id"])
 
     if structured is None:
@@ -96,10 +97,10 @@ def run_deterministic_checks(state: AuditState) -> AuditState:
     fields = state["structured_fields"]
     findings: list[dict] = []
 
-    _check_sum_insured(claim, fields, findings)
-    _check_room_rent_sub_limit(claim, fields, findings)
-    _check_initial_waiting_period(claim, fields, findings)
-    _check_procedure_sub_limits(claim, fields, findings)
+    _check_sum_insured(claim, fields or {}, findings)
+    _check_room_rent_sub_limit(claim, fields or {}, findings)
+    _check_initial_waiting_period(claim, fields or {}, findings)
+    _check_procedure_sub_limits(claim, fields or {}, findings)
 
     state["deterministic_findings"] = findings
     return state
@@ -243,7 +244,7 @@ def retrieve_clauses_for_claim(state: AuditState) -> AuditState:
         f"treatment type: {claim.get('treatment_type', '')}"
     )
 
-    with get_session() as session:
+    with get_db() as session:
         clauses = retrieve_relevant_clauses(
             session,
             policy_id=state["policy_id"],
@@ -304,7 +305,7 @@ def run_llm_clause_audit(state: AuditState) -> AuditState:
         f"Claim details:\n{claim}\n\nRetrieved policy clauses:\n{clause_block}"
     )
 
-    result = call_claude_json(AUDIT_SYSTEM_PROMPT, user_prompt, max_tokens=1500)
+    result = call_openai_json(AUDIT_SYSTEM_PROMPT, user_prompt, max_tokens=1500)
     state["llm_findings"] = result.get("findings", [])
     return state
 
@@ -382,7 +383,7 @@ def build_audit_graph():
     return graph.compile()
 
 
-def run_audit(claim: dict, policy_id: int) -> dict:
+def run_audit(claim: dict, policy_id: UUID) -> dict:
     """
     Convenience entry point: builds the graph and runs it for one claim.
 

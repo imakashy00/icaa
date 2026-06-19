@@ -9,6 +9,8 @@ same DB hold many companies' many policies without audits ever "seeing" the
 wrong policy's wording -- and without per-company query logic.
 """
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -17,7 +19,7 @@ from embeddings import EmbeddingService
 from app.models.claim import PolicyClause, PolicyStructuredField, SectionType
 
 
-def get_structured_fields(session: Session, policy_id: int) -> dict | None:
+def get_structured_fields(session: Session, policy_id: UUID) -> dict | None:
     """
     Fetches the pre-extracted structured fields (sum insured, sub-limits,
     waiting periods, copay, permanent exclusions) for a policy. Cheap DB
@@ -48,7 +50,7 @@ def get_structured_fields(session: Session, policy_id: int) -> dict | None:
 
 def retrieve_relevant_clauses(
     session: Session,
-    policy_id: int,
+    policy_id: UUID,
     query_text: str,
     top_k: int = settings.top_k_clauses,
     section_types: list[str] | None = None,

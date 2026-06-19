@@ -9,7 +9,7 @@ Run with: python main.py
 (requires DATABASE_URL and ANTHROPIC_API_KEY env vars, and a real PDF path)
 """
 
-from database import get_session, init_db
+from app.core.db import get_db
 from app.models.claim import Company
 from app.services.policy.pipeline import ingest_policy_document
 from audit_graph import run_audit
@@ -26,9 +26,9 @@ def get_or_create_company(session, name: str) -> int:
 
 
 if __name__ == "__main__":
-    init_db()
+    # init_db()
 
-    with get_session() as session:
+    with get_db() as session:
         company_id = get_or_create_company(session, "Acme Health Insurance")
 
         policy_id = ingest_policy_document(

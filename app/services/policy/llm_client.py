@@ -1,11 +1,3 @@
-"""
-Thin wrapper around the Anthropic API that enforces structured (JSON) output
-and adds retries. Every LLM step in this pipeline -- clause classification,
-structured field extraction at ingestion, and clause-based reasoning at audit
-time -- needs machine-readable output that downstream code can act on without
-further parsing/guessing.
-"""
-
 import json
 import time
 
@@ -16,22 +8,13 @@ from app.core.settings import settings
 _client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
-def call_claude_json(
+def call_openai_json(
     system_prompt: str,
     user_prompt: str,
     max_tokens: int = 2000,
     max_retries: int = 3,
 ) -> dict:
-    """
-    Calls Claude with a system prompt that instructs strict JSON-only output
-    and a user prompt containing the task content. Strips markdown code
-    fences if the model wraps its JSON in ```json ... ``` despite
-    instructions, and retries on transient API errors or JSON parse failures.
-
-    Returns the parsed dict. Raises RuntimeError if all retries fail --
-    callers should treat that as a hard failure (do not silently continue
-    an ingestion or audit with missing data).
-    """
+    """Calls OpenAI for strict JSON output, strips code fences, and retries on failure."""
     last_error: Exception | None = None
 
     for attempt in range(max_retries):
@@ -43,15 +26,14 @@ def call_claude_json(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
+            response_format={"type": "json_object"} 
             )
-            text_out = "".join(
-                block.text for block in response. if block.type == "text"
-            ).strip()
-
+            content = response.choices[0].message.content
+            text_out = content.strip() if content else ""
             text_out = _strip_code_fences(text_out)
             return json.loads(text_out)
 
-        except (json.JSONDecodeError, anthropic.APIError) as exc:
+        except (json.JSONDecodeError, openai.OpenAIError) as exc:
             last_error = exc
             time.sleep(1.5 * (attempt + 1))
 

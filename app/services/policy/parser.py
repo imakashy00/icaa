@@ -1,5 +1,7 @@
 """PDF -> per-page markdown, using pymupdf4llm."""
 
+from typing import Any, cast
+
 import pymupdf4llm
 
 
@@ -16,8 +18,17 @@ def parse_policy_pdf(file_path: str) -> list[dict]:
 
     Returns: [{"page": int, "text": str}, ...]
     """
-    pages = pymupdf4llm.to_markdown(file_path, page_chunks=True)
+    raw_pages = pymupdf4llm.to_markdown(file_path, page_chunks=True)
+    pages = cast(list[dict[str, Any]], raw_pages)
     return [
         {"page": page["metadata"].get("page", idx + 1), "text": page["text"]}
         for idx, page in enumerate(pages)
     ]
+    # return [
+    #     {
+    #         # Fix: Extract 'page' directly from the chunk dictionary
+    #         "page": page.get("page", idx + 1),
+    #         "text": page.get("text", ""),
+    #     }
+    #     for idx, page in enumerate(pages)
+    # ]

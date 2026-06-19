@@ -11,7 +11,7 @@ from the DB and runs a much smaller, targeted LLM call (see audit_graph.py).
 """
 
 from app.models.claim import SectionType
-from llm_client import call_claude_json
+from app.services.policy.llm_client import call_openai_json
 
 _VALID_SECTION_TYPES = {member.value for member in SectionType}
 
@@ -45,7 +45,7 @@ def classify_clauses(chunks: list[dict], batch_size: int = 15) -> list[dict]:
             for j, c in enumerate(batch)
         )
 
-        result = call_claude_json(CLASSIFY_SYSTEM_PROMPT, clause_list, max_tokens=500)
+        result = call_openai_json(CLASSIFY_SYSTEM_PROMPT, clause_list, max_tokens=500)
         labels = result.get("classifications", [])
 
         for c, label in zip(batch, labels):
@@ -100,4 +100,4 @@ def extract_structured_fields(full_policy_text: str) -> dict:
     one pass over the whole document.
     """
     truncated = full_policy_text[:60000]
-    return call_claude_json(EXTRACT_FIELDS_SYSTEM_PROMPT, truncated, max_tokens=2000)
+    return call_openai_json(EXTRACT_FIELDS_SYSTEM_PROMPT, truncated, max_tokens=2000)
