@@ -1,26 +1,47 @@
 import enum
 from datetime import date, datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 from decimal import Decimal
 from sqlalchemy import (
+    JSON,
     Boolean,
     Date,
     DateTime,
     Enum,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     Uuid,
     func,
 )
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     pass
 
+class SectionType(str, enum.Enum):
+    """
+    Generic taxonomy that covers the structure of most health insurance
+    policy wordings, regardless of insurer. Used to tag every clause at
+    ingestion and to scope retrieval at audit time (e.g. "only search
+    exclusion + condition clauses for this query").
+    """
+
+    DEFINITION = "definition"
+    EXCLUSION = "exclusion"
+    INCLUSION = "inclusion"
+    WAITING_PERIOD = "waiting_period"
+    SUB_LIMIT = "sub_limit"
+    COPAY = "copay"
+    CONDITION = "condition"
+    CLAIM_PROCEDURE = "claim_procedure"
+    GENERAL = "general"
 
 # --- Enums ---
 class RuleType(enum.Enum):
@@ -70,6 +91,133 @@ class ClaimDocument(Base):
     storage_path = mapped_column(Text)
 
     uploaded_at = mapped_column(DateTime)
+
+class Company(Base):
+    """One row per insurer. Policies belong to a company."""
+
+    __tablename__ = "companies"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+
+    # Relationship configuration
+    policies: Mapped[list["PolicyDocs"]] = relationship(back_populates="company")
+
+
+class PolicyDocs(Base):
+    """
+    One row per policy document (a company can have many policies,
+    and multiple versions of the same policy over time via `version`).
+    """
+
+    __tablename__ = "policy_docs"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "policy_code", "version", name="uq_policy_identity"
+        ),
+    )
+
+    # Core Columns
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id"), nullable=False, index=True
+    )
+    policy_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    policy_code: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    version: Mapped[str] = mapped_column(String(50), default="v1")
+
+    # Date Columns
+    effective_from: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    effective_to: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    ingested_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    # Audit trail
+    source_file: Mapped[Optional[str]] = mapped_column(String(512))
+
+    # Relationships
+    company: Mapped["Company"] = relationship("Company", back_populates="policies")
+
+    clauses: Mapped[List["PolicyClause"]] = relationship(
+        "PolicyClause", back_populates="policy", cascade="all, delete-orphan"
+    )
+
+    structured_fields: Mapped[Optional["PolicyStructuredField"]] = relationship(
+        "PolicyStructuredField",
+        back_populates="policy",
+        cascade="all, delete-orphan",
+    )
+
+
+class PolicyClause(Base):
+    """
+    One row per clause-level chunk of a policy document. This is what gets
+    vector-searched at audit time, always filtered by `policy_id` so a
+    query for one claim never touches another company's (or even another
+    policy's) clauses.
+    """
+ 
+    __tablename__ = "policy_clauses"
+ 
+    # Core Columns
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Note: Updated ForeignKey target from "policies.id" to "policy_docs.id"
+    policy_id: Mapped[int] = mapped_column(ForeignKey("policy_docs.id"), nullable=False, index=True)
+ 
+    # Content Columns
+    clause_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    heading: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    clause_text: Mapped[str] = mapped_column(Text, nullable=False)
+    section_type: Mapped[SectionType] = mapped_column(
+        Enum(SectionType), 
+        nullable=False, 
+        default=SectionType.GENERAL, 
+        index=True
+    )
+    page_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+ 
+    # Vector Embedding
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(1536))
+ 
+    # Relationships
+    policy: Mapped["PolicyDocs"] = relationship("PolicyDocs", back_populates="clauses")
+
+
+class PolicyStructuredField(Base):
+    """
+    One row per policy: the normalized, deterministic-audit-ready fields
+    extracted once by the LLM at ingestion time. `raw_extraction` stores the
+    full extraction output for traceability / re-review without re-calling
+    the LLM.
+    """
+ 
+    __tablename__ = "policy_structured_fields"
+ 
+    # Core Columns
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Note: Updated ForeignKey target from "policies.id" to "policy_docs.id"
+    policy_id: Mapped[UUID] = mapped_column(
+        ForeignKey("policy_docs.id"), 
+        nullable=False, 
+        unique=True, 
+        index=True
+    )
+ 
+    # Extracted Metrics
+    sum_insured: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), nullable=True)
+    
+    # JSON-backed Fields (Typed as Optional[Union[Dict, List]] for versatility)
+    room_rent_limit: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)   # {"type": "percentage_of_si", "value": 1}
+    copay: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSON, nullable=True)             # [{"condition": "...", "percentage": 10}]
+    waiting_periods: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)   # {"initial_days": 30, "pre_existing_disease_months": 36, ...}
+    sub_limits: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSON, nullable=True)        # [{"procedure_or_category": "cataract", "limit_type": "fixed_amount", "value": 25000}]
+    permanent_exclusions: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)  # ["...", "..."]
+ 
+    # Audit trail
+    raw_extraction: Mapped[Optional[Union[Dict[str, Any], List[Any]]]] = mapped_column(JSON, nullable=True)
+ 
+    # Relationships
+    policy: Mapped["PolicyDocs"] = relationship("PolicyDocs", back_populates="structured_fields")
+
 
 
 # --- Policy Domain Tables ---
