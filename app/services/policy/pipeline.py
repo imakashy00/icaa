@@ -1,22 +1,16 @@
-"""
-End-to-end ingestion: PDF in, fully populated Policy/PolicyClause/
-PolicyStructuredField rows out. This is the single function you call once
-per policy document (and again per renewal/version).
-"""
 import os
 import datetime
 
 from sqlalchemy.orm import Session
 
-from app.services.policy.embeddings import EmbeddingService
-from app.models.claim import Policy, PolicyClause, PolicyStructuredField, SectionType
+from app.models.claim import PolicyDocs, PolicyStructuredField
 from app.services.policy.chunker import chunk_policy_pages
 from app.services.policy.extractor import classify_clauses, extract_structured_fields
 from app.services.policy.parser import parse_policy_pdf
 
 
 def ingest_policy_document(
-    # session: Session,
+    session: Session,
     file_path: str,
     company_id: int,
     policy_name: str,
@@ -29,10 +23,9 @@ def ingest_policy_document(
       1. parse_policy_pdf          -- PDF -> per-page markdown (pymupdf4llm)
       2. chunk_policy_pages         -- markdown -> clause-level chunks
       3. classify_clauses           -- LLM tags each chunk's section_type
-      4. EmbeddingService            -- embeds every chunk
-      5. extract_structured_fields   -- LLM pulls sum insured / sub-limits /
+      4. extract_structured_fields   -- LLM pulls sum insured / sub-limits /
                                          copay / waiting periods / exclusions
-      6. persist Policy, PolicyClause rows (with embeddings), and
+      5. persist Policy, PolicyClause rows (with embeddings), and
          PolicyStructuredField
 
     Returns the new policy_id.
@@ -41,15 +34,9 @@ def ingest_policy_document(
     chunks = chunk_policy_pages(pages)
     chunks = classify_clauses(chunks)
 
-    embedder = EmbeddingService()
-    texts = [c["text"] for c in chunks]
-    embeddings = embedder.embed_texts(texts)
-
-    full_text = "\n\n".join(texts)
+    full_text = "\n\n".join(c["text"] for c in chunks)
     structured = extract_structured_fields(full_text)
-    print(structured)
-    print(full_text)
-    policy = Policy(
+    policy = PolicyDocs(
         company_id=company_id,
         policy_name=policy_name,
         policy_code=policy_code,
@@ -57,44 +44,10 @@ def ingest_policy_document(
         source_file=file_path,
         ingested_at=datetime.datetime.now(),
     )
-    # session.add(policy)
-    # session.flush()  # assigns policy.id without committing the transaction
+    session.add(policy)
+    session.flush()  # assigns policy.id without committing the transaction
 
-    for chunk, embedding in zip(chunks, embeddings):
-        # session.add(
-        #     PolicyClause(
-        #         policy_id=policy.id,
-        #         clause_number=chunk["clause_number"],
-        #         heading=chunk["heading"],
-        #         clause_text=chunk["text"],
-        #         section_type=SectionType(chunk["section_type"]),
-        #         page_number=chunk["page"],
-        #         embedding=embedding,
-        #     )
-        # )
-        print(PolicyClause(
-                policy_id=policy.id,
-                clause_number=chunk["clause_number"],
-                heading=chunk["heading"],
-                clause_text=chunk["text"],
-                section_type=SectionType(chunk["section_type"]),
-                page_number=chunk["page"],
-                embedding=embedding,
-            ))
-
-    # session.add(
-    #     PolicyStructuredField(
-    #         policy_id=policy.id,
-    #         sum_insured=_first_or_none(structured.get("sum_insured_options")),
-    #         room_rent_limit=structured.get("room_rent_limit"),
-    #         copay=structured.get("copay"),
-    #         waiting_periods=structured.get("waiting_periods"),
-    #         sub_limits=structured.get("sub_limits"),
-    #         permanent_exclusions=structured.get("permanent_exclusions"),
-    #         raw_extraction=structured,
-    #     )
-    # )
-    print(
+    session.add(
         PolicyStructuredField(
             policy_id=policy.id,
             sum_insured=_first_or_none(structured.get("sum_insured_options")),
@@ -119,4 +72,4 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Safely joins it with your PDF filename
     pdf_path = os.path.join(current_dir, "policy.pdf")
-    ingest_policy_document(pdf_path, 89, 'health policy', 'sjfsfo309w', 'v1')
+    # ingest_policy_document(pdf_path, 89, 'health policy', 'sjfsfo309w', 'v1')

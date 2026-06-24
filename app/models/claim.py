@@ -26,12 +26,6 @@ class Base(DeclarativeBase):
     pass
 
 class SectionType(str, enum.Enum):
-    """
-    Generic taxonomy that covers the structure of most health insurance
-    policy wordings, regardless of insurer. Used to tag every clause at
-    ingestion and to scope retrieval at audit time (e.g. "only search
-    exclusion + condition clauses for this query").
-    """
 
     DEFINITION = "definition"
     EXCLUSION = "exclusion"
