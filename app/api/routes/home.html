@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Policy AJAX</title>
+</head>
+<body>
+    <h2>Upload Policy Document</h2>
+    
+    <form id="policyForm">
+        <input type="text" name="company_id" placeholder="Company ID" required><br><br>
+        <input type="text" name="policy_name" placeholder="Policy Name" required><br><br>
+        <input type="text" name="policy_code" placeholder="Policy Code" required><br><br>
+        <input type="text" name="version" value="v1"><br><br>
+        <input type="file" name="policy_file" accept="application/pdf" required><br><br>
+        
+        <button type="submit">Submit via AJAX</button>
+    </form>
+
+    <div id="responseMessage"></div>
+
+    <script>
+        document.getElementById('policyForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Stop page reload
+            
+            const form = e.target;
+            const responseDiv = document.getElementById('responseMessage');
+            responseDiv.innerText = "Uploading...";
+
+            // ⚠️ FormData automatically handles file binaries and boundaries
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('http://localhost:8000/policy_doc', {
+                    method: 'POST',
+                    body: formData // Do NOT set 'Content-Type' header manually here!
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    responseDiv.style.color = "green";
+                    responseDiv.innerText = "Success! Storage Path: " + JSON.stringify(result);
+                } else {
+                    responseDiv.style.color = "red";
+                    responseDiv.innerText = "Error: " + JSON.stringify(result.detail);
+                }
+            } catch (error) {
+                responseDiv.style.color = "red";
+                responseDiv.innerText = "Network Error: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

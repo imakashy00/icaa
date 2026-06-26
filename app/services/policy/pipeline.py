@@ -12,7 +12,7 @@ from app.services.policy.parser import parse_policy_pdf
 def ingest_policy_document(
     session: Session,
     file_path: str,
-    company_id: int,
+    company_id: str,
     policy_name: str,
     policy_code: str,
     version: str = "v1",

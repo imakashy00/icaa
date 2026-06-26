@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from collections.abc import Generator
@@ -14,7 +12,7 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 # 3. Create a dependency injector for your routes/endpoints
-@contextmanager
+
 def get_db() -> Generator[Session, None, None]:
     """Dependency provider for database sessions. Automatically closes the session after use."""
     session = SessionLocal()

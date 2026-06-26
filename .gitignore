@@ -15,3 +15,6 @@ wheels/
 
 # Allow README.md
 !README.md
+
+# Ignore all the files in this folder
+mock_s3_storage/

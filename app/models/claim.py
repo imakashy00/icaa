@@ -3,6 +3,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 from decimal import Decimal
+import uuid
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -91,7 +92,9 @@ class Company(Base):
 
     __tablename__ = "companies"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     # Relationship configuration
@@ -113,7 +116,7 @@ class PolicyDocs(Base):
 
     # Core Columns
     id: Mapped[int] = mapped_column(primary_key=True)
-    company_id: Mapped[int] = mapped_column(
+    company_id: Mapped[str] = mapped_column(
         ForeignKey("companies.id"), nullable=False, index=True
     )
     policy_name: Mapped[str] = mapped_column(String(255), nullable=False)
