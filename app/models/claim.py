@@ -126,7 +126,7 @@ class PolicyDocs(Base):
     ingested_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     # Audit trail
-    source_file: Mapped[Optional[str]] = mapped_column(String(512))
+    source_file: Mapped[Optional[str]] = mapped_column(String(512), nullable=False)  # S3 or local path to the original PDF
 
     # Relationships
     company: Mapped["Company"] = relationship("Company", back_populates="policies")

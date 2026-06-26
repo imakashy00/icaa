@@ -97,4 +97,4 @@ workflow.add_conditional_edges(
     },
 )
 
-app = workflow.compile()
+icaa_graph = workflow.compile()
