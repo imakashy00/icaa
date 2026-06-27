@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 
-from app.models.claim import Company, PolicyDocs
+from app.models.claim import Company, PolicyDocument
 from app.services.policy.pipeline import ingest_policy_document
 from app.workflows.initial_data import INITIAL_STATE
 import boto3
@@ -44,7 +44,6 @@ class PolicyDocRequest(BaseModel):
     @classmethod
     def as_form(
         cls,
-        company_id: str = Form(...),
         policy_name: str = Form(...),
         policy_code: str = Form(...),
         version: str = Form("v1"),
@@ -65,7 +64,7 @@ MOCK_STORAGE_DIR = PROJECT_ROOT / "./mock_s3_storage"
 MOCK_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def upload_to_s3(file_bytes: bytes, filename: str) -> str:
+def upload_to_s3(file_bytes: bytes, filename: str) :
     """Mocks S3 upload by saving the file locally on your machine."""
     unique_id = uuid.uuid4().hex
     s3_key = f"policies/{unique_id}_{filename}"
@@ -75,7 +74,7 @@ def upload_to_s3(file_bytes: bytes, filename: str) -> str:
         f.write(file_bytes)
 
     # Return the exact same key format so your DB logic remains unchanged
-    return s3_key
+    return s3_key, local_path
 
 
 # def upload_to_s3(file_bytes: bytes, filename: str) -> str:
@@ -132,67 +131,42 @@ async def upload_policy_doc(
 
         if not company:
             # If Company.id is set up with a uuid4 default in SQLAlchemy,
-            # you don't need to supply an ID here manually.
             company = Company(name=form_data.policy_name)
             db.add(company)
-            db.commit()
-            db.refresh(company)
+            db.flush() # using flush instead of commit to reserve the id without locking the transaction permanantly
 
         # Extract the resolved company ID
         resolved_company_id = company.id
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to resolve or create company record: {str(e)}",
-        )
-    # store the file to s3 bucket
-    # put the source from s3 bucket to the PolicyDocs table in the database
-    # send the uploaded file to the pipeline
-    # 3. Save file to Cloud Object Storage
-    try:
-        s3_storage_path = upload_to_s3(pdf_content, filename)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file to storage system: {str(e)}",
-        )
-    # 4. Create Database Entry
-    new_policy = PolicyDocs(
-        company_id=resolved_company_id,
-        policy_name=form_data.policy_name,
-        policy_code=form_data.policy_code,
-        version=form_data.version,
-        source_file=s3_storage_path,  # S3 location tracker
-        ingested_at=datetime.now(),
-    )
-
-    try:
-        db.add(new_policy)
-        db.commit()
-        db.refresh(new_policy)
-    except Exception as e:
-        print(e)
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Database conflict. Ensure company exists and combination is unique.",
-        )
-
+        s3_storage_path, absolute_local_path = upload_to_s3(pdf_content, filename)
+    
     # 5. Hand over to background processing pipeline
     # Recommend using a task runner like Celery or FastAPI BackgroundTasks here
-    ingest_policy_document(
-        db,
-        s3_storage_path,
-        resolved_company_id,
-        form_data.policy_name,
-        form_data.policy_code,
-        form_data.version,
-    )
+        policy_id = ingest_policy_document(
+            db,
+            absolute_local_path,
+            resolved_company_id,
+            form_data.policy_name,
+            form_data.policy_code,
+            form_data.version,
+        )
+        # Optional: If you want to keep the final stored asset pointer as the S3 path in DB,
+        # update it right before committing
+        policy_record = db.query(PolicyDocument).get(policy_id)
+        if policy_record:
+            policy_record.source_file = s3_storage_path
+
+        db.commit()
+    except Exception as e:
+        db.rollback()  # Wipes out the Company and Policy metadata if PyMuPDF or database crashes
+        print(f"Ingestion crashed, rolling back transaction: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to process and upload policy document: {str(e)}",
+        )
 
     return {
         "filename": filename,
+        "policy_id": policy_id,
         "status": "Successfully uploaded",
     }
 

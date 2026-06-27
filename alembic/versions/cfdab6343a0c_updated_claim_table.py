@@ -1,8 +1,8 @@
-""" add docs to the company table for foreign key
+"""updated claim table
 
-Revision ID: ecc29d7a2737
-Revises: 2a7f3370171e
-Create Date: 2026-06-23 11:11:21.466102
+Revision ID: cfdab6343a0c
+Revises: 2072a09d4440
+Create Date: 2026-06-28 01:52:42.091870
 
 """
 from typing import Sequence, Union
@@ -13,8 +13,8 @@ import pgvector.sqlalchemy
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ecc29d7a2737'
-down_revision: Union[str, Sequence[str], None] = '2a7f3370171e'
+revision: str = 'cfdab6343a0c'
+down_revision: Union[str, Sequence[str], None] = '2072a09d4440'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

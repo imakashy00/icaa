@@ -18,3 +18,6 @@ wheels/
 
 # Ignore all the files in this folder
 mock_s3_storage/
+
+.DS_Store
+**/ .DS_Store

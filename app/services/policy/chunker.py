@@ -22,8 +22,7 @@ import re
 #   - markdown headings:           "## 4.1 Waiting Periods"
 #   - plain numbered clause headings: "4.1.2 Pre-existing Diseases"
 HEADING_PATTERN = re.compile(
-    r"^(?:#{1,4}\s*)?((?:Section\s+)?\d+(?:\.\d+){0,4})\.?\s+([A-Za-z].{2,120})$",
-    re.MULTILINE,
+    r"^##\s+\*\*(?:([A-Z\d]+(?:\.[A-Z\d]+)*)\.)?\s*(.*?)\*\*$", re.MULTILINE
 )
 
 

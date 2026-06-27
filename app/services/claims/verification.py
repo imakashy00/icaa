@@ -9,7 +9,7 @@ from app.core.db import SessionLocal
 from app.workflows.state import ClaimState
 
 
-from app.models.claim import Policy, PolicyBeneficiary
+from app.models.claim import PolicyContract, PolicyMember
 
 
 def verify_user(
@@ -17,12 +17,12 @@ def verify_user(
     db: Session,
 ):
     policy = db.scalar(
-        select(Policy).where(Policy.policy_no == state.primary_insured.policy_no)
+        select(PolicyContract).where(PolicyContract.policy_no == state.primary_insured.policy_no)
     )
 
     if not policy:
         state.verification.user.passed = False
-        state.verification.user.reason = "Policy number not found"
+        state.verification.user.reason = "PolicyContract number not found"
         return
 
     if (
@@ -30,7 +30,7 @@ def verify_user(
         != state.primary_insured.policy_holder_name.lower().strip()
     ):
         state.verification.user.passed = False
-        state.verification.user.reason = "Policy holder name mismatch"
+        state.verification.user.reason = "PolicyContract holder name mismatch"
         return
 
     state.verification.user.passed = True
@@ -42,29 +42,29 @@ def verify_insurance(
     db: Session,
 ):
     policy = db.scalar(
-        select(Policy).where(Policy.policy_no == state.primary_insured.policy_no)
+        select(PolicyContract).where(PolicyContract.policy_no == state.primary_insured.policy_no)
     )
 
     if not policy:
         state.verification.policy.passed = False
-        state.verification.policy.reason = "Policy not found"
+        state.verification.policy.reason = "PolicyContract not found"
         return
 
     today = date.today()
 
     if not policy.active:
         state.verification.policy.passed = False
-        state.verification.policy.reason = "Policy inactive"
+        state.verification.policy.reason = "PolicyContract inactive"
         return
 
     if policy.start_date > today:
         state.verification.policy.passed = False
-        state.verification.policy.reason = "Policy not started"
+        state.verification.policy.reason = "PolicyContract not started"
         return
 
     if policy.end_date < today:
         state.verification.policy.passed = False
-        state.verification.policy.reason = "Policy expired"
+        state.verification.policy.reason = "PolicyContract expired"
         return
 
     if policy.available_sum_insured <= 0:
@@ -80,18 +80,18 @@ def verify_patient_details(
     db: Session,
 ):
     policy = db.scalar(
-        select(Policy).where(Policy.policy_no == state.primary_insured.policy_no)
+        select(PolicyContract).where(PolicyContract.policy_no == state.primary_insured.policy_no)
     )
 
     if not policy:
         state.verification.patient.passed = False
-        state.verification.patient.reason = "Policy not found"
+        state.verification.patient.reason = "PolicyContract not found"
         return
 
     beneficiary = db.scalar(
-        select(PolicyBeneficiary).where(
-            PolicyBeneficiary.policy_id == policy.id,
-            PolicyBeneficiary.name == state.patient_details.patient_name,
+        select(PolicyMember).where(
+            PolicyMember.policy_id == policy.id,
+            PolicyMember.name == state.patient_details.patient_name,
         )
     )
 
@@ -100,7 +100,7 @@ def verify_patient_details(
         state.verification.patient.reason = "Patient not covered under policy"
         return
 
-    relation = beneficiary.beneficiary_relationship.lower()
+    relation = beneficiary.relationship_to_holder.lower()
 
     claim_relation = state.patient_details.relationship_to_policy_holder.lower()
 

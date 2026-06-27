@@ -1,9 +1,10 @@
 import os
 import datetime
 
+from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app.models.claim import PolicyDocs, PolicyStructuredField
+from app.models.claim import PolicyDocument, PolicyCoverage
 from app.services.policy.chunker import chunk_policy_pages
 from app.services.policy.extractor import classify_clauses, extract_structured_fields
 from app.services.policy.parser import parse_policy_pdf
@@ -12,7 +13,7 @@ from app.services.policy.parser import parse_policy_pdf
 def ingest_policy_document(
     session: Session,
     file_path: str,
-    company_id: str,
+    company_id: UUID,
     policy_name: str,
     policy_code: str,
     version: str = "v1",
@@ -31,12 +32,17 @@ def ingest_policy_document(
     Returns the new policy_id.
     """
     pages = parse_policy_pdf(file_path)
+    print("--> chunking policy pages")
     chunks = chunk_policy_pages(pages)
+    print(chunks)
+    print("--> classify_clauses")
     chunks = classify_clauses(chunks)
 
     full_text = "\n\n".join(c["text"] for c in chunks)
+    print("--> extract_structured_fields")
     structured = extract_structured_fields(full_text)
-    policy = PolicyDocs(
+    print(f"--> Structured Data=:{structured}")
+    policy = PolicyDocument(
         company_id=company_id,
         policy_name=policy_name,
         policy_code=policy_code,
@@ -48,8 +54,8 @@ def ingest_policy_document(
     session.flush()  # assigns policy.id without committing the transaction
 
     session.add(
-        PolicyStructuredField(
-            policy_id=policy.id,
+        PolicyCoverage(
+            policy_document_id=policy.id,
             sum_insured=_first_or_none(structured.get("sum_insured_options")),
             room_rent_limit=structured.get("room_rent_limit"),
             copay=structured.get("copay"),
@@ -59,6 +65,7 @@ def ingest_policy_document(
             raw_extraction=structured,
         )
     )
+    print("--> Returning policy Id...")
 
     return policy.id
 

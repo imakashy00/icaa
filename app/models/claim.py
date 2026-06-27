@@ -3,7 +3,6 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 from decimal import Decimal
-import uuid
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -26,8 +25,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 class Base(DeclarativeBase):
     pass
 
-class SectionType(str, enum.Enum):
 
+class SectionType(str, enum.Enum):
     DEFINITION = "definition"
     EXCLUSION = "exclusion"
     INCLUSION = "inclusion"
@@ -38,12 +37,8 @@ class SectionType(str, enum.Enum):
     CLAIM_PROCEDURE = "claim_procedure"
     GENERAL = "general"
 
-# --- Enums ---
-class RuleType(enum.Enum):
-    EXCLUSION = "exclusion"
-    WAITING_PERIOD = "waiting_period"
-    SUB_LIMIT = "sub_limit"
 
+# --- Enums ---
 
 class ClaimStatus(enum.Enum):
     INITIATED = "initiated"
@@ -62,52 +57,67 @@ class HospitalType(enum.Enum):
 class ICDMaster(Base):
     __tablename__ = "icd_master"
 
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
     icd_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     description: Mapped[str] = mapped_column(Text)
     is_chronic: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
-    rule_exclusions: Mapped[List["PolicyRuleExclusion"]] = relationship(
-        back_populates="icd_reference"
-    )
     medical_details: Mapped[List["ClaimMedicalDetail"]] = relationship(
         back_populates="icd_reference"
     )
 
+
 class ClaimDocument(Base):
     __tablename__ = "claim_documents"
 
-    id = mapped_column(Uuid, primary_key=True)
-    claim_id = mapped_column(ForeignKey("claims.id"))
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
+    claim_id: Mapped[UUID] = mapped_column(
+        ForeignKey("claims.id"),
+        nullable=False,
+        index=True,
+    )
 
-    filename = mapped_column(String(255))
-    document_type = mapped_column(String(100))
-    storage_path = mapped_column(Text)
+    filename: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    document_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    storage_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    uploaded_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    claim: Mapped["Claim"] = relationship(back_populates="documents")
 
-    uploaded_at = mapped_column(DateTime)
 
 class Company(Base):
     """One row per insurer. Policies belong to a company."""
 
     __tablename__ = "companies"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
     )
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     # Relationship configuration
-    policies: Mapped[list["PolicyDocs"]] = relationship(back_populates="company")
+    policy_documents: Mapped[List["PolicyDocument"]] = relationship(
+        back_populates="company"
+    )
 
 
-class PolicyDocs(Base):
+class PolicyDocument(Base):
     """
     One row per policy document (a company can have many policies,
     and multiple versions of the same policy over time via `version`).
     """
 
-    __tablename__ = "policy_docs"
+    __tablename__ = "policy_documents"
     __table_args__ = (
         UniqueConstraint(
             "company_id", "policy_code", "version", name="uq_policy_identity"
@@ -115,8 +125,12 @@ class PolicyDocs(Base):
     )
 
     # Core Columns
-    id: Mapped[int] = mapped_column(primary_key=True)
-    company_id: Mapped[str] = mapped_column(
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
+    company_id: Mapped[UUID] = mapped_column(
         ForeignKey("companies.id"), nullable=False, index=True
     )
     policy_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -126,20 +140,24 @@ class PolicyDocs(Base):
     # Date Columns
     effective_from: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     effective_to: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ingested_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    ingested_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Audit trail
-    source_file: Mapped[Optional[str]] = mapped_column(String(512), nullable=False)  # S3 or local path to the original PDF
+    source_file: Mapped[str] = mapped_column(
+        String(512), nullable=False
+    )  # S3 or local path to the original PDF
 
     # Relationships
-    company: Mapped["Company"] = relationship("Company", back_populates="policies")
-
-    clauses: Mapped[List["PolicyClause"]] = relationship(
-        "PolicyClause", back_populates="policy", cascade="all, delete-orphan"
+    company: Mapped["Company"] = relationship(
+        "Company", back_populates="policy_documents"
     )
 
-    structured_fields: Mapped[Optional["PolicyStructuredField"]] = relationship(
-        "PolicyStructuredField",
+    clauses: Mapped[List["PolicyClause"]] = relationship(
+        "PolicyClause", back_populates="policy_document", cascade="all, delete-orphan"
+    )
+
+    coverage: Mapped[Optional["PolicyCoverage"]] = relationship(
+        "PolicyCoverage",
         back_populates="policy",
         cascade="all, delete-orphan",
     )
@@ -152,84 +170,116 @@ class PolicyClause(Base):
     query for one claim never touches another company's (or even another
     policy's) clauses.
     """
- 
+
     __tablename__ = "policy_clauses"
- 
+
     # Core Columns
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
     # Note: Updated ForeignKey target from "policies.id" to "policy_docs.id"
-    policy_id: Mapped[int] = mapped_column(ForeignKey("policy_docs.id"), nullable=False, index=True)
- 
+    policy_document_id: Mapped[UUID] = mapped_column(
+        ForeignKey("policy_documents.id"), nullable=False, index=True
+    )
+
     # Content Columns
     clause_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     heading: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     clause_text: Mapped[str] = mapped_column(Text, nullable=False)
     section_type: Mapped[SectionType] = mapped_column(
-        Enum(SectionType), 
-        nullable=False, 
-        default=SectionType.GENERAL, 
-        index=True
+        Enum(SectionType), nullable=False, default=SectionType.GENERAL, index=True
     )
     page_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
- 
+
     # Vector Embedding
-    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(1536))
- 
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(1536), nullable=True)
+
     # Relationships
-    policy: Mapped["PolicyDocs"] = relationship("PolicyDocs", back_populates="clauses")
+    policy_document: Mapped["PolicyDocument"] = relationship(
+        "PolicyDocument", back_populates="clauses"
+    )
 
 
-class PolicyStructuredField(Base):
+class PolicyCoverage(Base):
     """
     One row per policy: the normalized, deterministic-audit-ready fields
     extracted once by the LLM at ingestion time. `raw_extraction` stores the
     full extraction output for traceability / re-review without re-calling
     the LLM.
     """
- 
-    __tablename__ = "policy_structured_fields"
- 
-    # Core Columns
-    id: Mapped[int] = mapped_column(primary_key=True)
-    # Note: Updated ForeignKey target from "policies.id" to "policy_docs.id"
-    policy_id: Mapped[UUID] = mapped_column(
-        ForeignKey("policy_docs.id"), 
-        nullable=False, 
-        unique=True, 
-        index=True
-    )
- 
-    # Extracted Metrics
-    sum_insured: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), nullable=True)
-    
-    # JSON-backed Fields (Typed as Optional[Union[Dict, List]] for versatility)
-    room_rent_limit: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)   # {"type": "percentage_of_si", "value": 1}
-    copay: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSON, nullable=True)             # [{"condition": "...", "percentage": 10}]
-    waiting_periods: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)   # {"initial_days": 30, "pre_existing_disease_months": 36, ...}
-    sub_limits: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSON, nullable=True)        # [{"procedure_or_category": "cataract", "limit_type": "fixed_amount", "value": 25000}]
-    permanent_exclusions: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)  # ["...", "..."]
- 
-    # Audit trail
-    raw_extraction: Mapped[Optional[Union[Dict[str, Any], List[Any]]]] = mapped_column(JSON, nullable=True)
- 
-    # Relationships
-    policy: Mapped["PolicyDocs"] = relationship("PolicyDocs", back_populates="structured_fields")
 
+    __tablename__ = "policy_coverages"
+
+    # Core Columns
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
+    # Note: Updated ForeignKey target from "policies.id" to "policy_docs.id"
+    policy_document_id: Mapped[UUID] = mapped_column(
+        ForeignKey("policy_documents.id"), nullable=False, unique=True, index=True
+    )
+
+    # Extracted Metrics
+    sum_insured: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(14, 2), nullable=True
+    )
+
+    # JSON-backed Fields (Typed as Optional[Union[Dict, List]] for versatility)
+    room_rent_limit: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )  # {"type": "percentage_of_si", "value": 1}
+    copay: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(
+        JSON, nullable=True
+    )  # [{"condition": "...", "percentage": 10}]
+    waiting_periods: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )  # {"initial_days": 30, "pre_existing_disease_months": 36, ...}
+    sub_limits: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(
+        JSON, nullable=True
+    )  # [{"procedure_or_category": "cataract", "limit_type": "fixed_amount", "value": 25000}]
+    permanent_exclusions: Mapped[Optional[List[str]]] = mapped_column(
+        JSON, nullable=True
+    )  # ["...", "..."]
+
+    # Audit trail
+    raw_extraction: Mapped[Optional[Union[Dict[str, Any], List[Any]]]] = mapped_column(
+        JSON, nullable=True
+    )
+
+    # Relationships
+    policy: Mapped["PolicyDocument"] = relationship(
+        "PolicyDocument", back_populates="coverage"
+    )
 
 
 # --- Policy Domain Tables ---
-class Policy(Base):
-    __tablename__ = "policies"
+class PolicyContract(Base):
+    __tablename__ = "policy_contracts"
 
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
     policy_no: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        ForeignKey("companies.id"),
+        index=True,
+    )
+    policy_document_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("policy_documents.id"), index=True, nullable=True
+    )
     tpa_id: Mapped[str] = mapped_column(String(50))
     policy_holder_name: Mapped[str] = mapped_column(String(255))
-    address = mapped_column(Text)
-    city = mapped_column(String(100))
-    state = mapped_column(String(100))
-    pin_code = mapped_column(String(20))
-    email = mapped_column(String(255))
+    address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    pin_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     start_date: Mapped[date] = mapped_column(Date)
     end_date: Mapped[date] = mapped_column(Date)
@@ -238,28 +288,26 @@ class Policy(Base):
     # Using Numeric for high-precision financial tracking
     total_sum_insured: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     available_sum_insured: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    room_rent_cap_per_day: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
-    co_pay_percentage: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0.0)
-
     # Relationships
-    beneficiaries: Mapped[List["PolicyBeneficiary"]] = relationship(
-        back_populates="policy", cascade="all, delete-orphan"
-    )
-    rules_exclusions: Mapped[List["PolicyRuleExclusion"]] = relationship(
+    members: Mapped[List["PolicyMember"]] = relationship(
         back_populates="policy", cascade="all, delete-orphan"
     )
     claims: Mapped[List["Claim"]] = relationship(back_populates="policy")
+    policy_document: Mapped["PolicyDocument"] = relationship()
 
+class PolicyMember(Base):
+    __tablename__ = "policy_members"
 
-class PolicyBeneficiary(Base):
-    __tablename__ = "policy_beneficiaries"
-
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    policy_id: Mapped[UUID] = mapped_column(ForeignKey("policies.id"), index=True)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
+    policy_id: Mapped[UUID] = mapped_column(
+        ForeignKey("policy_contracts.id"), index=True
+    )
     name: Mapped[str] = mapped_column(String(255), index=True)
-    beneficiary_relationship: Mapped[str] = mapped_column(
+    relationship_to_holder: Mapped[str] = mapped_column(
         String(50)
     )  # Self, Spouse, Child
     gender: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
@@ -267,38 +315,24 @@ class PolicyBeneficiary(Base):
     occupation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Relationships
-    policy: Mapped["Policy"] = relationship(back_populates="beneficiaries")
-
-
-class PolicyRuleExclusion(Base):
-    __tablename__ = "policy_rules_exclusions"
-
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    policy_id: Mapped[UUID] = mapped_column(ForeignKey("policies.id"), index=True)
-    icd_id: Mapped[Optional[UUID]] = mapped_column(
-        ForeignKey("icd_master.id"), nullable=True
-    )
-    condition_name: Mapped[str] = mapped_column(String(255))
-    rule_type: Mapped[RuleType] = mapped_column(Enum(RuleType))
-    waiting_period_months: Mapped[int] = mapped_column(default=0)
-    max_payout_limit: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(12, 2), nullable=True
-    )
-
-    # Relationships
-    policy: Mapped["Policy"] = relationship(back_populates="rules_exclusions")
-    icd_reference: Mapped[Optional["ICDMaster"]] = relationship(
-        back_populates="rule_exclusions"
-    )
-
+    policy: Mapped["PolicyContract"] = relationship(back_populates="members")
+    claims: Mapped[List["Claim"]] = relationship(back_populates="member")
 
 # --- Claims Lifecycle Tables ---
 class Claim(Base):
     __tablename__ = "claims"
 
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    beneficiary_id = mapped_column(ForeignKey("policy_beneficiaries.id"))
-    policy_id: Mapped[UUID] = mapped_column(ForeignKey("policies.id"), index=True)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
+    member_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("policy_members.id"), index=True, nullable=True
+    )
+    policy_id: Mapped[UUID] = mapped_column(
+        ForeignKey("policy_contracts.id"), index=True
+    )
     status: Mapped[ClaimStatus] = mapped_column(
         Enum(ClaimStatus), default=ClaimStatus.INITIATED
     )
@@ -313,19 +347,27 @@ class Claim(Base):
     )
 
     # Relationships
-    policy: Mapped["Policy"] = relationship(back_populates="claims")
+    policy: Mapped["PolicyContract"] = relationship(back_populates="claims")
     medical_details: Mapped[List["ClaimMedicalDetail"]] = relationship(
         back_populates="claim", cascade="all, delete-orphan"
     )
-    financials: Mapped["ClaimFinancial"] = relationship(
+    financial: Mapped["ClaimFinancial"] = relationship(
         back_populates="claim", cascade="all, delete-orphan"
     )
+    documents: Mapped[List["ClaimDocument"]] = relationship(
+        back_populates="claim", cascade="all, delete-orphan"
+    )
+    member: Mapped[Optional["PolicyMember"]] = relationship(back_populates="claims")
 
 
 class Hospital(Base):
     __tablename__ = "hospitals"
 
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
     hospital_code: Mapped[str] = mapped_column(String(50), unique=True)
     hospital_name: Mapped[str] = mapped_column(String(255))
     hospital_type: Mapped[HospitalType] = mapped_column(Enum(HospitalType))
@@ -336,25 +378,28 @@ class Hospital(Base):
 class ClaimMedicalDetail(Base):
     __tablename__ = "claim_medical_details"
 
-    claim_id: Mapped[UUID] = mapped_column(ForeignKey("claims.id"), primary_key=True)
-    hospital_name: Mapped[str] = mapped_column(String(255))
-    hospital_type: Mapped[HospitalType] = mapped_column(Enum(HospitalType))
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    claim_id: Mapped[UUID] = mapped_column(
+        ForeignKey("claims.id"), nullable=False, index=True
+    )
     admission_date: Mapped[date] = mapped_column(Date)
     discharge_date: Mapped[date] = mapped_column(Date)
     icd_id: Mapped[UUID] = mapped_column(ForeignKey("icd_master.id"), index=True)
     procedure_name: Mapped[str] = mapped_column(String(255))
     room_category_used: Mapped[str] = mapped_column(String(100))
-
+    hospital_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hospitals.id"), nullable=False, index=True
+    )
     # Relationships
     claim: Mapped["Claim"] = relationship(back_populates="medical_details")
     icd_reference: Mapped["ICDMaster"] = relationship(back_populates="medical_details")
-    hospital_id = ForeignKey("hospitals.id")
+    hospital: Mapped["Hospital"] = relationship()
+
 
 class ClaimFinancial(Base):
     __tablename__ = "claim_financials"
 
     claim_id: Mapped[UUID] = mapped_column(ForeignKey("claims.id"), primary_key=True)
-
     # Extracted requested amounts
     requested_hospitalization: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), default=0.0
@@ -368,7 +413,9 @@ class ClaimFinancial(Base):
     requested_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.0)
 
     # Calculated adjudicated amounts
-    approved_hospitalization: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.0)
+    approved_hospitalization: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), default=0.0
+    )
     approved_pre_hospitalization: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), default=0.0
     )
@@ -382,4 +429,4 @@ class ClaimFinancial(Base):
     )  # Audits partial payment choices
 
     # Relationships
-    claim: Mapped["Claim"] = relationship(back_populates="financials")
+    claim: Mapped["Claim"] = relationship(back_populates="financial")
